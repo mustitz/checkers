@@ -3,6 +3,8 @@
 *.bz2
 *.gz
 *.o
+*.trs
+*.log
 
 log
 .deps
@@ -20,9 +22,12 @@ Makefile.in
 /depcomp
 /install-sh
 /missing
+/test-driver
 
 /include/config.h
 /include/config.h.in
 /include/stamp-h1
 
 /source/rus-checkers
+
+/validation/insider

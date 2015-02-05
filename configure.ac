@@ -25,7 +25,7 @@ AM_SILENT_RULES([yes])
 
 
 AC_CONFIG_HEADERS([include/config.h])
-AC_CONFIG_FILES([Makefile source/Makefile include/Makefile])
+AC_CONFIG_FILES([Makefile source/Makefile include/Makefile validation/Makefile])
 
 
 
