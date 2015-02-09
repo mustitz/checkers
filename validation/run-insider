@@ -1,5 +1,0 @@
-#/bin/sh
-
-./insider | while read line ; do
-    ./insider $line
-done

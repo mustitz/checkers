@@ -1,0 +1,48 @@
+#/bin/sh
+
+valgrind=@VALGRIND@
+exit_code=0
+
+sup_file=
+if test -s "valgrind.supp"; then
+  sup_file="--suppressions=valgrind.supp"
+fi  
+
+rm -f *.valgrind.log
+
+
+
+./insider | { while read line ; do
+
+    if test "x$valgrind" = "x" ; then
+        ./insider $line
+        result="$?"
+        valgrind_result=0
+    else
+        $valgrind --quiet --leak-check=full --show-reachable=yes ./insider $line 2>"$line.valgrind.log"
+        result="$?"
+
+        if test -s "$line.valgrind.log"; then
+            valgrind_result=1
+            head -1 "$line.valgrind.log"
+        else
+            rm "$line.valgrind.log"
+            valgrind_result=0
+        fi
+    fi
+
+    if test $result -eq 0; then
+        if test $valgrind_result -ne 0; then
+            result=1
+        fi
+    fi
+
+    if test $result -ne 0; then
+        echo "Test '$line' fails."
+        exit_code=1
+    fi
+
+done
+
+exit $exit_code
+}

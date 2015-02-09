@@ -182,7 +182,10 @@ void run_test_item(const struct test_item * item)
 {
     test_name = item->name;
     printf("Run test for %s:\n", item->name);
-    (*item->function)();
+    int test_exit_code = (*item->function)();
+    if (test_exit_code) {
+        exit(test_exit_code);
+    }
 }
 
 void run_all_tests()
