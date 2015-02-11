@@ -29,6 +29,8 @@ Makefile.in
 /include/stamp-h1
 
 /source/rus-checkers
+/source/gen-magic
+/source/magic-tables.c
 
 /validation/insider
 /validation/run-insider
