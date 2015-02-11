@@ -60,4 +60,9 @@ static inline bitboard_t rotate_r7(const bitboard_t bitboard)
     return (bitboard >> 7) | (bitboard << 25);
 }
 
+extern int square_to_index[32];
+extern square_t index_to_square[64];
+extern const char * const upper_square_str[32];
+extern const char * const lower_square_str[32];
+
 #endif
