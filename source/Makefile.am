@@ -10,11 +10,13 @@ EXTRA_CFLAGS = -Ofast
 endif
 
 rus_checkers_CFLAGS = $(EXTRA_CFLAGS)
-rus_checkers_SOURCES = main.c
+rus_checkers_SOURCES = main.c gen-moves.c
 nodist_rus_checkers_SOURCES = magic-tables.c
 
 gen_magic_CFLAGS = $(EXTRA_CFLAGS)
 gen_magic_SOURCES = gen-magic.c
+
+EXTRA_DIST = inc.gen-moves.c
 
 
 magic-tables.c : gen-magic

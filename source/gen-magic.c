@@ -1,4 +1,4 @@
-#include <checkers.h>
+#include "checkers.h"
 
 #include <stdio.h>
 
@@ -78,7 +78,7 @@ static void init_strings()
 
 static void print_file()
 {
-    printf("#include <checkers.h>\n\n");
+    printf("#include \"checkers.h\"\n\n");
 
     printf("int square_to_index[32] = {\n");
     for (int i=0; i<32; ++i) {
