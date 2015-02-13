@@ -1,9 +1,18 @@
 #ifndef MU__CHECKERS__H__
 #define MU__CHECKERS__H__
 
+#include <memory.h>
 #include <stdint.h>
 
-typedef uint32_t square_t;
+
+
+
+
+/*
+ *   BOARD GEOMETRY
+ */ 
+
+typedef int square_t;
 typedef uint32_t bitboard_t;
 
 enum square_t {
@@ -40,7 +49,7 @@ enum square_t {
 
 #define BOARD (RANK_1 | RANK_2 | RANK_3 | RANK_4 | RANK_5 | RANK_6 | RANK_7 | RANK_8) 
 
-static inline enum square_t get_first_square(const bitboard_t bitboard)
+static inline square_t get_first_square(const bitboard_t bitboard)
 {
     return __builtin_ctz(bitboard);
 }
@@ -50,19 +59,120 @@ static inline int pop_count(const bitboard_t bitboard)
     return __builtin_popcount(bitboard);
 }
 
-static inline bitboard_t rotate_l7(const bitboard_t bitboard)
+static inline bitboard_t rotate_u7(const bitboard_t bitboard)
 {
     return (bitboard << 7) | (bitboard >> 25);
 }
 
-static inline bitboard_t rotate_r7(const bitboard_t bitboard)
+static inline bitboard_t rotate_d7(const bitboard_t bitboard)
 {
     return (bitboard >> 7) | (bitboard << 25);
 }
+
+struct square_magic
+{
+    bitboard_t mask7;
+    uint32_t factor7;
+    int shift1;
+};
+
+struct mam_take_magic
+{
+    bitboard_t dead[2];
+    bitboard_t next[2];
+};
 
 extern int square_to_index[32];
 extern square_t index_to_square[64];
 extern const char * const upper_square_str[32];
 extern const char * const lower_square_str[32];
+extern struct square_magic square_magic[32];
+extern struct mam_take_magic mam_take_magic_1[32][256];
+extern struct mam_take_magic mam_take_magic_7[32][256];
+
+
+
+
+
+/*
+ *   MOVE GENERATION
+ */
+
+#define TAKING_SIZE   64
+#define NEXT_TAKING(index) (index = (index + 1) % TAKING_SIZE)
+
+typedef int side_t;
+typedef int piece_t;
+
+enum side_t { WHITE, BLACK };
+enum piece_t { ALL, SINGLE };
+enum position_bitboard_index_t {
+    IDX_ALL = 0,
+    IDX_ALL_0 = 0,
+    IDX_ALL_1 = 1,
+    IDX_SIM = 2,
+    IDX_SIM_0 = 2,
+    IDX_SIM_1 = 3
+};
+
+struct position
+{
+    bitboard_t bitboards[4];
+    side_t active;
+};
+
+struct way
+{
+    unsigned int is_7 : 1;
+    unsigned int is_down : 1;
+};
+
+struct taking
+{
+    bitboard_t from;
+    bitboard_t killed;
+    bitboard_t current;
+    struct way way;
+};
+
+struct move_inner
+{
+    int count;
+    bitboard_t values[11];
+};
+
+static inline void copy_inner(struct move_inner * restrict dest, const struct move_inner * src)
+{
+    dest->count = src->count;
+    memcpy(dest->values, src->values, src->count * sizeof(bitboard_t));
+}
+
+struct move
+{
+    bitboard_t from;
+    bitboard_t to;
+    bitboard_t killed;
+    int is_mam;
+    struct move_inner inner;
+};
+
+struct move_ctx
+{
+    bitboard_t all;
+    bitboard_t enemy;
+    struct position position;
+
+    int mam_taking_last;
+    struct taking mam_taking[TAKING_SIZE];
+    struct move_inner mam_move_inner[TAKING_SIZE];
+
+    int sim_taking_last;
+    struct taking sim_taking[TAKING_SIZE];
+    struct move_inner sim_move_inner[TAKING_SIZE];
+
+    int answer_count;
+    struct position * restrict answers;
+    struct move * restrict moves;
+};
 
 #endif

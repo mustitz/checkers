@@ -158,6 +158,10 @@ static void print_file()
 
     };
     printf("};\n\n");
+
+    printf("struct square_magic square_magic[32];\n");
+    printf("struct mam_take_magic mam_take_magic_1[32][256];\n");
+    printf("struct mam_take_magic mam_take_magic_7[32][256];\n");
 }
 
 int main()
