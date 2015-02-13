@@ -8,9 +8,26 @@ struct tables
     square_t index_to_square[64];
     char upper_square_str[32][4];
     char lower_square_str[32][4];
+    struct square_magic square_magic[32];
+    struct mam_take_magic mam_take_magic_1[32][256];
+    struct mam_take_magic mam_take_magic_7[32][256];
 };
 
 struct tables tables;
+
+static void init_square_to_index();
+static void init_index_to_square();
+static void init_strings();
+static void print_file();
+
+int main()
+{
+    init_square_to_index();
+    init_index_to_square();
+    init_strings();
+    print_file();
+    return 0;
+}
 
 static void init_square_to_index()
 {
@@ -159,17 +176,46 @@ static void print_file()
     };
     printf("};\n\n");
 
-    printf("struct square_magic square_magic[32];\n");
-    printf("struct mam_take_magic mam_take_magic_1[32][256];\n");
-    printf("struct mam_take_magic mam_take_magic_7[32][256];\n");
-}
+    printf("struct square_magic square_magic[32] = {\n");
+    for (int i=0; i<32; ++i) {
+        printf("    { 0x%08X, 0x%08X, %2d}%s\n", 
+            tables.square_magic[i].mask7, 
+            tables.square_magic[i].factor7, 
+            tables.square_magic[i].shift1,
+            (i != 31 ? "," : "")
+        );
+    }
+    printf("};\n\n");
 
-int main()
-{
-    init_square_to_index();
-    init_index_to_square();
-    init_strings();
+    printf("struct mam_take_magic mam_take_magic_1[32][256] = {\n");
+    for (int i=0; i<32; ++i) {
+        printf("    {\n");
+        for (int j=0; j<256; ++j) {
+            printf("        { { 0x%08X, 0x%08X }, { 0x%08X, 0x%08X } }%s\n",
+                tables.mam_take_magic_1[i][j].dead[0],
+                tables.mam_take_magic_1[i][j].dead[1],
+                tables.mam_take_magic_1[i][j].next[0],
+                tables.mam_take_magic_1[i][j].next[1],
+                (j != 255 ? "," : "")
+             );
+        }
+        printf("    }%s\n", (i != 31 ? "," : ""));
+    }
+    printf("};\n\n");
 
-    print_file();
-    return 0;
+    printf("struct mam_take_magic mam_take_magic_7[32][256] = {\n");
+    for (int i=0; i<32; ++i) {
+        printf("    {\n");
+        for (int j=0; j<256; ++j) {
+            printf("        { { 0x%08X, 0x%08X }, { 0x%08X, 0x%08X } }%s\n",
+                tables.mam_take_magic_7[i][j].dead[0],
+                tables.mam_take_magic_7[i][j].dead[1],
+                tables.mam_take_magic_7[i][j].next[0],
+                tables.mam_take_magic_7[i][j].next[1],
+                (j != 255 ? "," : "")
+             );
+        }
+        printf("    }%s\n", (i != 31 ? "," : ""));
+    }
+    printf("};\n");
 }
