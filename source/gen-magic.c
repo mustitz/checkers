@@ -1,6 +1,7 @@
 #include "checkers.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 struct tables
 {
@@ -15,16 +16,65 @@ struct tables
 
 struct tables tables;
 
+
+
+static inline int get_bit(uint32_t value, int n)
+{
+    return ((1 << n) & value) != 0;
+}
+
+int permutations[1*2*3*4*5*6*7*8][8];
+
+void save_permutation(const int * values, int n)
+{
+    static size_t counter = 0;
+    memcpy(permutations[counter++], values, 8*sizeof(int));
+}
+
+void recurcive_gen_permutations(int * restrict base, int base_n, const int * variable, int variable_n)
+{
+    if (variable_n == 0) {
+        return save_permutation(base, base_n);
+    }
+
+    int tmp[variable_n];
+    for (int i=0; i<variable_n; ++i) {
+        base[base_n] = variable[i];
+
+        int k = 0;
+        for (int j=0; j<variable_n; ++j) {
+            if (i != j) {
+                tmp[k++] = variable[j]; 
+            }
+        }
+
+        recurcive_gen_permutations(base, base_n+1, tmp, variable_n-1);
+    }
+}
+
+void gen_permutations(const int * digits, int n)
+{
+    int base[n];
+    recurcive_gen_permutations(base, 0, digits, n);
+}
+
+
+
 static void init_square_to_index();
 static void init_index_to_square();
 static void init_strings();
+static void init_magic();
 static void print_file();
 
 int main()
 {
+    int digits[] = { 0, 1, 2, 3, 4, 5, 6, 7};
+    gen_permutations(digits, 8);
+
     init_square_to_index();
     init_index_to_square();
     init_strings();
+    init_magic();
     print_file();
     return 0;
 }
@@ -92,6 +142,296 @@ static void init_strings()
         tables.lower_square_str[i][1] = rank_str[index / 8];
     }
 }
+
+static void handle_way_1(int n, const int * squares);
+static void handle_way_7(int n, const int * squares);
+
+static void init_magic()
+{
+    int a1a1[] = { A1 };
+    int c1a3[] = { C1, B2, A3 };
+    int e1a5[] = { E1, D2, C3, B4, A5 };
+    int g1a7[] = { G1, F2, E3, D4, C5, B6, A7 };
+    int h2b8[] = { H2, G3, F4, E5, D6, C7, B8 };
+    int h4d8[] = { H4, G5, F6, E7, D8 };
+    int h6f8[] = { H6, G7, F8 };
+    int h8h8[] = { H8 };
+
+    handle_way_1(1, a1a1);
+    handle_way_1(3, c1a3);
+    handle_way_1(5, e1a5);
+    handle_way_1(7, g1a7);
+    handle_way_1(7, h2b8);
+    handle_way_1(5, h4d8);
+    handle_way_1(3, h6f8);
+    handle_way_1(1, h8h8);
+    
+    int a1h8[] = { A1, B2, C3, D4, E5, F6, G7, H8 };
+    int a3f8[] = { A3, B4, C5, D6, E7, F8 };
+    int a5d8[] = { A5, B6, C7, D8 };
+    int a7b8[] = { A7, B8 };
+    int c1h6[] = { C1, D2, E3, F4, G5, H6 };
+    int e1h4[] = { E1, F2, G3, H4 };
+    int g1h2[] = { G1, H2 };
+
+    handle_way_7(8, a1h8);
+    handle_way_7(6, a3f8);
+    handle_way_7(4, a5d8);
+    handle_way_7(2, a7b8);
+    handle_way_7(6, c1h6);
+    handle_way_7(4, e1h4);
+    handle_way_7(2, g1h2);
+}
+
+enum bitboard_dead_next_index
+{
+    IDX_DEAD_0,
+    IDX_NEXT_0,
+    IDX_DEAD_1,
+    IDX_NEXT_1
+};
+
+static void process_mask(uint32_t mask, int n, const int * squares, int i, bitboard_t * restrict data);
+
+static void handle_way_1(int n, const int * squares)
+{
+    for (int i=0; i<n; ++i) {
+        tables.square_magic[squares[i]].shift1 = squares[0];
+    }
+
+    for (int i=0; i<n; ++i) {
+        for (uint32_t mask = 0; mask < 256; ++mask) {
+            
+            bitboard_t data[4];
+            process_mask(mask, n, squares, i, data);
+
+            if (data[IDX_NEXT_0]) {
+                tables.mam_take_magic_1[squares[i]][mask].dead[0] = data[IDX_DEAD_0];
+                tables.mam_take_magic_1[squares[i]][mask].next[0] = data[IDX_NEXT_0];
+            }
+
+            if (data[IDX_NEXT_1]) {
+                tables.mam_take_magic_1[squares[i]][mask].dead[1] = data[IDX_DEAD_1];
+                tables.mam_take_magic_1[squares[i]][mask].next[1] = data[IDX_NEXT_1];
+            }
+        }
+    }
+}
+
+struct permutation_ctx
+{
+    int n;
+    const int * squares;
+
+    uint32_t magic;
+    const int * permutation;
+    int offsets[8];
+};
+
+static void find_permutation(struct permutation_ctx * restrict ctx);
+
+static void handle_way_7(int n, const int * squares)
+{
+    struct permutation_ctx ctx;
+    ctx.squares = squares;
+    ctx.n = n;
+    find_permutation(&ctx);
+    if (ctx.permutation == 0) {
+        fprintf(stderr, "Fail to find permutations for handle_way_7.\n");
+        exit(-1);
+    }
+
+    bitboard_t mask = 0;
+    for (int i=0; i<n; ++i) {
+        mask |= MASK(squares[i]);
+    }
+
+    for (int i=0; i<n; ++i) {
+        tables.square_magic[squares[i]].factor7 = ctx.magic;
+        tables.square_magic[squares[i]].mask7 = mask;
+    }
+
+    for (int i=0; i<n; ++i) {
+        for (uint32_t magic_mask = 0; magic_mask < 256; ++magic_mask) {
+
+            uint32_t mask = 0;
+            uint32_t bit = 1;
+            for (int j=0; j<n; ++j) {
+                int bit_index = ctx.permutation[j] + 8 - n;
+                if (magic_mask & (1<<bit_index)) {
+                    mask |= bit;
+                }
+
+                bit <<= 1;
+            }
+
+            bitboard_t data[4];
+            process_mask(mask, n, squares, i, data);
+
+            if (data[IDX_NEXT_0]) {
+                tables.mam_take_magic_7[squares[i]][magic_mask].dead[0] = data[IDX_DEAD_0];
+                tables.mam_take_magic_7[squares[i]][magic_mask].next[0] = data[IDX_NEXT_0];
+            }
+
+            if (data[IDX_NEXT_1]) {
+                tables.mam_take_magic_7[squares[i]][magic_mask].dead[1] = data[IDX_DEAD_1];
+                tables.mam_take_magic_7[squares[i]][magic_mask].next[1] = data[IDX_NEXT_1];
+            }
+        }
+    }
+}
+
+static int try_permutation(struct permutation_ctx * restrict ctx);
+
+static void find_permutation(struct permutation_ctx * restrict ctx)
+{
+    if (ctx->n == 0) {
+        ctx->permutation = 0;
+        return;
+    }
+
+    size_t count = 1;
+    for (int i=2; i<ctx->n; ++i) {
+        count *= i;
+    }
+
+    for (ssize_t i=0; i<count; ++i) {
+        ctx->permutation = permutations[i];
+        if (try_permutation(ctx)) {
+            return;
+        }
+    }
+
+    ctx->permutation = 0;
+}
+
+static int calc_offsets(struct permutation_ctx * restrict ctx);
+static void calc_magic(struct permutation_ctx * restrict ctx);
+static int verify(struct permutation_ctx * restrict ctx);
+
+static int try_permutation(struct permutation_ctx * restrict ctx)
+{
+    int is_ok = calc_offsets(ctx);
+    if (!is_ok) {
+        return 0;
+    }
+
+    calc_magic(ctx);
+
+    if (!verify(ctx)) {
+        return 0;
+    }
+
+    return 1;
+}
+
+static int calc_offsets(struct permutation_ctx * restrict ctx)
+{
+    for (int i=0; i<ctx->n; ++i) {
+        int expected = 32 - ctx->n + ctx->permutation[i];
+        ctx->offsets[i] = expected - ctx->squares[i];
+        if (ctx->offsets[i] < 0) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+static void calc_magic(struct permutation_ctx * restrict ctx)
+{
+    ctx->magic = 0;
+    for (int i=0; i<ctx->n; ++i) {
+        ctx->magic |= 1 << ctx->offsets[i];
+    }
+}
+
+static int verify(struct permutation_ctx * restrict ctx)
+{
+    uint32_t mask = 1 << ctx->n;
+    while (mask --> 0) {
+        uint32_t bitboard = 0;
+        for (int i=0; i<ctx->n; ++i) {
+            int bit = get_bit(mask, i);
+            bitboard |= bit << ctx->squares[i];
+        }
+
+        uint32_t tmp = (bitboard * ctx->magic) >> (32-ctx->n);
+        for (int i=0; i<ctx->n; ++i) {
+            int b1 = get_bit(mask, i);
+            int b2 = get_bit(tmp, ctx->permutation[i]);
+            if (b1 != b2) {
+                return 0;
+            }
+        }
+    }
+
+    return 1;
+}
+
+static void process_mask(uint32_t mask, int n, const int * squares, int i, bitboard_t * restrict data)
+{
+    data[IDX_NEXT_0] = 0;
+    data[IDX_NEXT_1] = 0;
+
+    int f = i;
+    uint32_t bit = 1 << i;
+
+    for (;;) {
+        ++f;
+        bit <<= 1;
+
+        if (f >= n || (bit & mask)) {
+            break;
+        }
+    }
+
+    if (f < n) {
+        data[IDX_DEAD_0] = MASK(squares[f]);
+
+        for (;;) {
+            ++f;
+            bit <<= 1;
+
+            if (f>=n || (bit & mask)) {
+                break;
+            }
+
+            data[IDX_NEXT_0] |= MASK(squares[f]);
+        }
+    }
+
+    f = i;
+    bit = 1 << f;
+    
+    for (;;) {
+
+        --f;
+        bit >>= 1;
+
+        if (f < 0 || (bit & mask)) {
+            break;
+        }
+    }
+
+    if (f >= 0) {
+
+        data[IDX_DEAD_1] = MASK(squares[f]);
+
+        for (;;) {
+            --f;
+            bit >>= 1;
+
+            if (f < 0 || (bit & mask)) {
+                break;
+            }
+
+            data[IDX_NEXT_1] |= MASK(squares[f]);
+        }
+    }
+}
+
+
 
 static void print_file()
 {
