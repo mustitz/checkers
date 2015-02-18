@@ -78,15 +78,15 @@ int test_diag(int delta, const square_t * squares)
         return 0;
     }
 
-    bitboard_t tmp_r7 = rotate_r7(diag) | MASK(*squares);
-    if (tmp_r7 != diag) {
-        test_fail("rotate_r7 fails.");
+    bitboard_t tmp_d7 = rotate_d7(diag) | MASK(*squares);
+    if (tmp_d7 != diag) {
+        test_fail("rotate_d7 fails.");
     }
 
     --current;
-    bitboard_t tmp_l7 = rotate_l7(diag) | MASK(*current);
-    if (tmp_l7 != diag) {
-        test_fail("rotate_l7 fails.");
+    bitboard_t tmp_u7 = rotate_u7(diag) | MASK(*current);
+    if (tmp_u7 != diag) {
+        test_fail("rotate_u7 fails.");
     }
 }
 
