@@ -16,7 +16,7 @@ static inline uint64_t get_possible(const struct keyword_tracker_step * * ptr, u
     return current->possible[ch];
 }
 
-struct keyword_tracker * build_keyword_tracker(const struct keyword_desc * keyword_list, struct mempool * restrict pool)
+struct keyword_tracker * build_keyword_tracker(const struct keyword_desc * keyword_list, struct mempool * restrict pool, int flags)
 {
     int keyword_count = 0;
     size_t max_len = 0;
@@ -70,6 +70,18 @@ struct keyword_tracker * build_keyword_tracker(const struct keyword_desc * keywo
             if (i < text_lengths[j]) {
                 unsigned char ch = keyword_list[j].text[i];
                 step->possible[ch] |= mask;
+                if (flags & KW_TRACKER__IGNORE_CASE) {
+                    unsigned char ch2 = '\0';
+                    if (ch >= 'a' && ch <= 'z') {
+                        ch2 = ch -'a' + 'A';
+                    }
+                    if (ch >= 'A' && ch <= 'Z') {
+                        ch2 = ch - 'A' + 'a';
+                    }
+                    if (ch2) {
+                        step->possible[ch2] |= mask;
+                    }
+                }
                 continue;
             }
 

@@ -11,6 +11,8 @@
  * Keyword tracker
  */
 
+#define KW_TRACKER__IGNORE_CASE           1
+
 struct keyword_desc
 {
     const char * text;
@@ -30,7 +32,7 @@ struct keyword_tracker
     const struct keyword_tracker_step * first_step;
 };
 
-struct keyword_tracker * build_keyword_tracker(const struct keyword_desc * keyword_list, struct mempool * restrict pool);
+struct keyword_tracker * build_keyword_tracker(const struct keyword_desc * keyword_list, struct mempool * restrict pool, int flags);
 
 
 

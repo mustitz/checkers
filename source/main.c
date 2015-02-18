@@ -25,7 +25,7 @@ static void init_parser(struct cmd_parser * restrict me, struct mempool * pool)
 {
     me->pool = pool;
 
-    me->root_level = build_keyword_tracker(root_level_keywords, pool);
+    me->root_level = build_keyword_tracker(root_level_keywords, pool, KW_TRACKER__IGNORE_CASE);
     if (me->root_level == NULL) {
         panic("Can not create root_level keyword tracker.");
     }
