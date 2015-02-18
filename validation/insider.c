@@ -1,30 +1,14 @@
 #include "checkers.h"
 
+#define WITH_TESTS 
+#include "../source/mu-data-struct.c"
+#include "../source/mu-parser.c"
+
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
-const char * test_name = "";
-
-void test_fail(const char * fmt, ...) __attribute__ ((format (printf, 1, 2)));
-
-void fail()
-{
-    fprintf(stderr, "\n");
-    exit(1);
-}
-
-void test_fail(const char * fmt, ...)
-{
-    fprintf(stderr, "Test `%s' fails: ", test_name);
-    va_list args;
-    va_start(args, fmt);
-    vfprintf(stderr, fmt, args);
-    va_end(args);
-    fail();
-}
 
 int test_empty()
 {
@@ -167,6 +151,10 @@ struct test_item
 struct test_item tests[] = {
     { "empty", &test_empty },
     { "bitboard", &test_bitboard },
+    { "mempool", &test_mempool },
+    { "str_map", &test_str_map },
+    { "sets", &test_sets },
+    { "parser", &test_parser },
     { NULL, NULL }
 };
 
@@ -181,7 +169,7 @@ void print_tests()
 void run_test_item(const struct test_item * item)
 {
     test_name = item->name;
-    printf("Run test for %s:\n", item->name);
+    printf("Run test `%s'\n", item->name);
     int test_exit_code = (*item->function)();
     if (test_exit_code) {
         exit(test_exit_code);
