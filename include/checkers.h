@@ -175,4 +175,12 @@ struct move_ctx
     struct move * restrict moves;
 };
 
+
+
+struct game
+{
+};
+
+static inline void game_move_list(struct game * restrict game) {}
+
 #endif

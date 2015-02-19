@@ -22,15 +22,21 @@ struct keyword_desc root_level_keywords[] = {
 struct cmd_parser
 {
     struct line_parser line_parser;
-    struct keyword_tracker * root_level;
+    struct keyword_tracker * keyword_tracker;
+    struct game * game;
 };
 
-static void init_parser(struct cmd_parser * restrict me, struct mempool * pool)
+static void init_parser(
+    struct cmd_parser * restrict me, 
+    struct mempool * pool, 
+    struct game * game)
 {
-    me->root_level = build_keyword_tracker(root_level_keywords, pool, KW_TRACKER__IGNORE_CASE);
-    if (me->root_level == NULL) {
-        panic("Can not create root_level keyword tracker.");
+    me->keyword_tracker = build_keyword_tracker(root_level_keywords, pool, KW_TRACKER__IGNORE_CASE);
+    if (me->keyword_tracker == NULL) {
+        panic("Can not create keyword_traker.");
     }
+
+    me->game = game;
 }
 
 static void error(struct cmd_parser * restrict me, const char * fmt, ...) __attribute__ ((format (printf, 2, 3))); 
@@ -51,18 +57,18 @@ static void error(struct cmd_parser * restrict me, const char * fmt, ...)
 
 
 
-int process_quit(struct cmd_parser * restrict me)
+static int read_keyword(struct cmd_parser * restrict me)
 {
     struct line_parser * restrict lp = &me->line_parser;
-    if (!parser_check_eol(lp)) {
-        error(me, "End of line expected (section declaration is over), but someting was found.");
-        return 0;
-    }
-
-    return 1;
+    parser_skip_spaces(lp);
+    return parser_read_keyword(lp, me->keyword_tracker); 
 }
 
-int process_cmd(struct cmd_parser * restrict me, const char * cmd)
+
+static int process_quit(struct cmd_parser * restrict me);
+static void process_move(struct cmd_parser * restrict me);
+
+static int process_cmd(struct cmd_parser * restrict me, const char * cmd)
 {
     struct line_parser * restrict lp = &me->line_parser;
     parser_set_line(lp, cmd);
@@ -71,7 +77,7 @@ int process_cmd(struct cmd_parser * restrict me, const char * cmd)
         return 0;
     }
 
-    int keyword = parser_read_keyword(lp, me->root_level);
+    int keyword = read_keyword(me);
 
     if (keyword == -1) {
         error(me, "Invalid lexem at the begginning of the line.");
@@ -83,13 +89,63 @@ int process_cmd(struct cmd_parser * restrict me, const char * cmd)
         return 0;
     }
 
-    switch (keyword) {
-        case KW_QUIT:
-            return process_quit(me);  
+    if (keyword == KW_QUIT) {
+        return process_quit(me);
     }
 
-    error(me, "Unexpected keyword at the begginning of the line.");
+    switch (keyword) {
+        case KW_MOVE:
+            process_move(me);
+            break;
+        default:
+            error(me, "Unexpected keyword at the begginning of the line.");
+            break;
+    }
+
     return 0;
+}
+
+static int process_quit(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    if (!parser_check_eol(lp)) {
+        error(me, "End of line expected (QUIT command is parsed), but someting was found.");
+        return 0;
+    }
+
+    return 1;
+}
+
+static void process_move_list(struct cmd_parser * restrict me);
+
+static void process_move(struct cmd_parser * restrict me)
+{
+    int keyword = read_keyword(me);
+
+    if (keyword == -1) {
+        return error(me, "Invalid lexem in MOVE command.");
+    }
+
+    if (keyword == 0) {
+        return error(me, "Invalid keyword in MOVE command.");
+    }
+
+    switch (keyword) {
+        case KW_LIST:
+            return process_move_list(me);
+    }
+
+    error(me, "Unexpected keyword in MOVE command.");
+}
+
+static void process_move_list(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    if (parser_check_eol(lp)) {
+        game_move_list(me->game);
+    } else {
+        error(me, "End of line expected (MOVE LIST command is parsed), but something was found.");
+    }
 }
 
 int main()
@@ -105,8 +161,9 @@ int main()
         return 1;
     }
 
+    struct game game;
     struct cmd_parser parser;
-    init_parser(&parser, pool);
+    init_parser(&parser, pool, &game);
 
     for (;; ) {
         ssize_t hasRead = getline(&line, &len, stdin);
