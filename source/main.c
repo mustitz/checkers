@@ -6,10 +6,15 @@
 #include <time.h>
 
 #define KW_QUIT          1
+#define KW_MOVE          2
+#define KW_LIST          3
 
 #define ITEM(name) { #name, KW_##name }
 struct keyword_desc root_level_keywords[] = {
+    { "exit", KW_QUIT },
     ITEM(QUIT),
+    ITEM(MOVE),
+    ITEM(LIST),
     { NULL, 0 }
 };
 #undef ITEM
@@ -17,14 +22,11 @@ struct keyword_desc root_level_keywords[] = {
 struct cmd_parser
 {
     struct line_parser line_parser;
-    struct mempool * pool;
     struct keyword_tracker * root_level;
 };
 
 static void init_parser(struct cmd_parser * restrict me, struct mempool * pool)
 {
-    me->pool = pool;
-
     me->root_level = build_keyword_tracker(root_level_keywords, pool, KW_TRACKER__IGNORE_CASE);
     if (me->root_level == NULL) {
         panic("Can not create root_level keyword tracker.");
@@ -35,12 +37,16 @@ static void error(struct cmd_parser * restrict me, const char * fmt, ...) __attr
 
 static void error(struct cmd_parser * restrict me, const char * fmt, ...)
 {
+    const struct line_parser * lp = &me->line_parser;
+
     va_list args;
     va_start(args, fmt);
     printf("Parsing error: ");
     vprintf(fmt, args);
-    printf("\n");
     va_end(args);
+
+    int offset = lp->lexem_start - lp->line;
+    printf("\n> %s> %*s^\n", lp->line, offset, "");
 }
 
 
@@ -82,7 +88,7 @@ int process_cmd(struct cmd_parser * restrict me, const char * cmd)
             return process_quit(me);  
     }
 
-    error(me, "[INTERNAL] Unexpected keyword (%d) code was returned by parser_read_keyword.", keyword);
+    error(me, "Unexpected keyword at the begginning of the line.");
     return 0;
 }
 
