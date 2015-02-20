@@ -8,6 +8,7 @@
 #define KW_QUIT          1
 #define KW_MOVE          2
 #define KW_LIST          3
+#define KW_FEN           4
 
 #define ITEM(name) { #name, KW_##name }
 struct keyword_desc root_level_keywords[] = {
@@ -15,6 +16,7 @@ struct keyword_desc root_level_keywords[] = {
     ITEM(QUIT),
     ITEM(MOVE),
     ITEM(LIST),
+    ITEM(FEN),
     { NULL, 0 }
 };
 #undef ITEM
@@ -70,6 +72,7 @@ static int read_keyword(struct cmd_parser * restrict me)
 
 static int process_quit(struct cmd_parser * restrict me);
 static void process_move(struct cmd_parser * restrict me);
+static void process_fen(struct cmd_parser * restrict me);
 
 static int process_cmd(struct cmd_parser * restrict me, const char * cmd)
 {
@@ -99,6 +102,9 @@ static int process_cmd(struct cmd_parser * restrict me, const char * cmd)
     switch (keyword) {
         case KW_MOVE:
             process_move(me);
+            break;
+        case KW_FEN:
+            process_fen(me);
             break;
         default:
             error(me, "Unexpected keyword at the begginning of the line.");
@@ -148,6 +154,16 @@ static void process_move_list(struct cmd_parser * restrict me)
         game_move_list(me->game);
     } else {
         error(me, "End of line expected (MOVE LIST command is parsed), but something was found.");
+    }
+}
+
+static void process_fen(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    if (parser_check_eol(lp)) {
+        game_print_fen(me->game);
+    } else {
+        error(me, "End of line expected (FEN command is parsed), but something was found.");
     }
 }
 

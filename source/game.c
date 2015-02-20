@@ -1,5 +1,6 @@
 #include "checkers.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -186,4 +187,87 @@ static void print_verbose_move(const struct verbose_move * verbose_move)
         printf("%s%s", delimeter, lower_index_str(verbose_move->squares[i]));
     }
     printf("\n");
+}
+
+void print_side(const char * side, bitboard_t sim, bitboard_t mam);
+
+void game_print_fen(const struct game * me)
+{
+    const struct position * position = me->position;
+    
+    if (position->active == WHITE) {
+        printf("W:");
+    }
+    if (position->active == BLACK) {
+        printf("B:");
+    }
+    bitboard_t ws = position->bitboards[IDX_SIM_0];
+    bitboard_t wm = position->bitboards[IDX_ALL_0] ^ ws;
+    bitboard_t bs = position->bitboards[IDX_SIM_1];
+    bitboard_t bm = position->bitboards[IDX_ALL_1] ^ bs;
+
+    if (ws | wm) {
+        print_side("W", ws, wm);
+        if (bs | bm) {
+            printf(":");
+        }
+    }
+
+    if (bs | bm) {
+        print_side("B", bs, bm);
+    }
+
+    printf("\n");
+}
+
+void print_bitboard(const char * prefix, bitboard_t bb);
+
+void print_side(const char * side, bitboard_t sim, bitboard_t mam)
+{
+    if (sim | mam) {
+        printf("%s", side);
+    }
+
+    if (sim) {
+        print_bitboard("", sim);
+        if (mam) {
+            printf(",");
+        }
+    }
+
+    if (mam) {
+        print_bitboard("K", mam);
+    }
+}
+
+static int cmp_str(const void * a, const void * b)
+{
+    const char * const * ptr_a = a;
+    const char * const * ptr_b = b;
+    return strcmp(*ptr_a, *ptr_b);
+}
+
+void print_bitboard(const char * prefix, bitboard_t bb)
+{
+    int n = pop_count(bb);
+    const char * lower_str[n];
+
+    int i = 0;
+    while (bb) {
+        enum square_t sq = get_first_square(bb);
+        bb &= bb - 1;
+        lower_str[i++] = lower_square_str[sq]; 
+    }
+
+    assert(i == n);
+
+    qsort(lower_str, n, sizeof(const char *), cmp_str);
+
+    if (n > 0) {
+        printf("%s%s", prefix, lower_str[0]);
+    }
+
+    for (i=1; i<n; ++i) {
+        printf(",%s%s", prefix, lower_str[i]);
+    }
 }

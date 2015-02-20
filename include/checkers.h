@@ -240,5 +240,6 @@ struct game
 
 struct game * create_game(struct mempool * restrict pool);
 void game_move_list(struct game * restrict me);
+void game_print_fen(const struct game * me);
 
 #endif
