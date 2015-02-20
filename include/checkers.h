@@ -4,6 +4,20 @@
 #include <memory.h>
 #include <stdint.h>
 
+#include "mu-data-struct.h"
+
+
+
+
+
+/*
+ * Buffer sizes
+ */
+
+#define BUF_SIZE__TAKING          64
+#define BUF_SIZE__ANSWERS        128
+#define BUF_SIZE__VERBOSE_MOVE   256
+
 
 
 
@@ -49,24 +63,36 @@ enum square_t {
 
 #define BOARD (RANK_1 | RANK_2 | RANK_3 | RANK_4 | RANK_5 | RANK_6 | RANK_7 | RANK_8) 
 
-static inline square_t get_first_square(const bitboard_t bitboard)
+static inline square_t get_first_square(bitboard_t bb)
 {
-    return __builtin_ctz(bitboard);
+    return __builtin_ctz(bb);
 }
 
-static inline int pop_count(const bitboard_t bitboard)
+static inline square_t extract_first_square(bitboard_t * bb)
 {
-    return __builtin_popcount(bitboard);
+    square_t result = get_first_square(*bb);
+    *bb &= *bb - 1;
+    return result;
 }
 
-static inline bitboard_t rotate_u7(const bitboard_t bitboard)
+static inline int pop_count(bitboard_t bb)
 {
-    return (bitboard << 7) | (bitboard >> 25);
+    return __builtin_popcount(bb);
 }
 
-static inline bitboard_t rotate_d7(const bitboard_t bitboard)
+static inline bitboard_t rotate_u7(bitboard_t bb)
 {
-    return (bitboard >> 7) | (bitboard << 25);
+    return (bb << 7) | (bb >> 25);
+}
+
+static inline bitboard_t rotate_d7(bitboard_t bb)
+{
+    return (bb >> 7) | (bb << 25);
+}
+
+static inline int get_bit(bitboard_t bb, int n)
+{
+    return ((1 << n) & bb) != 0;
 }
 
 struct square_magic
@@ -90,6 +116,16 @@ extern struct square_magic square_magic[32];
 extern struct mam_take_magic mam_take_magic_1[32][256];
 extern struct mam_take_magic mam_take_magic_7[32][256];
 
+static inline const char * upper_index_str(int index)
+{
+    return upper_square_str[index_to_square[index]];
+}
+
+static inline const char * lower_index_str(int index)
+{
+    return lower_square_str[index_to_square[index]];
+}
+
 
 
 
@@ -98,8 +134,7 @@ extern struct mam_take_magic mam_take_magic_7[32][256];
  *   MOVE GENERATION
  */
 
-#define TAKING_SIZE   64
-#define NEXT_TAKING(index) (index = (index + 1) % TAKING_SIZE)
+#define NEXT_TAKING(index) (index = (index + 1) % BUF_SIZE__TAKING)
 
 typedef int side_t;
 typedef int piece_t;
@@ -160,27 +195,50 @@ struct move_ctx
 {
     bitboard_t all;
     bitboard_t enemy;
-    struct position position;
-
-    int mam_taking_last;
-    struct taking mam_taking[TAKING_SIZE];
-    struct move_inner mam_move_inner[TAKING_SIZE];
+    const struct position * position;
 
     int sim_taking_last;
-    struct taking sim_taking[TAKING_SIZE];
-    struct move_inner sim_move_inner[TAKING_SIZE];
+    int mam_taking_last;
+    struct taking * restrict sim_taking;
+    struct taking * restrict mam_taking;
+    struct move_inner * restrict sim_move_inner;
+    struct move_inner * restrict mam_move_inner;
 
     int answer_count;
     struct position * restrict answers;
     struct move * restrict moves;
 };
 
+void gen_moves(struct move_ctx * restrict ctx);
+void user_friendly_gen_moves(struct move_ctx * restrict ctx);
 
+
+
+
+
+/*
+ * Game object
+ */
+
+
+struct verbose_move
+{
+    square_t squares[12];
+    int len;
+    int is_mam;
+    int is_taking;
+    int index;
+};
 
 struct game
 {
+    struct position * restrict position;
+    struct move_ctx * restrict move_ctx;
+    struct verbose_move * restrict verbose_moves;
+    int verbose_move_count;
 };
 
-static inline void game_move_list(struct game * restrict game) {}
+struct game * create_game(struct mempool * restrict pool);
+void game_move_list(struct game * restrict me);
 
 #endif

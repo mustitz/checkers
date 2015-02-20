@@ -18,11 +18,6 @@ struct tables tables;
 
 
 
-static inline int get_bit(uint32_t value, int n)
-{
-    return ((1 << n) & value) != 0;
-}
-
 int permutations[1*2*3*4*5*6*7*8][8];
 
 void save_permutation(const int * values, int n)
@@ -350,13 +345,13 @@ static int verify(struct permutation_ctx * restrict ctx)
 {
     uint32_t mask = 1 << ctx->n;
     while (mask --> 0) {
-        uint32_t bitboard = 0;
+        uint32_t bb = 0;
         for (int i=0; i<ctx->n; ++i) {
             int bit = get_bit(mask, i);
-            bitboard |= bit << ctx->squares[i];
+            bb |= bit << ctx->squares[i];
         }
 
-        uint32_t tmp = (bitboard * ctx->magic) >> (32-ctx->n);
+        uint32_t tmp = (bb * ctx->magic) >> (32-ctx->n);
         for (int i=0; i<ctx->n; ++i) {
             int b1 = get_bit(mask, i);
             int b2 = get_bit(tmp, ctx->permutation[i]);

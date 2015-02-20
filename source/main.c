@@ -26,17 +26,20 @@ struct cmd_parser
     struct game * game;
 };
 
-static void init_parser(
-    struct cmd_parser * restrict me, 
-    struct mempool * pool, 
-    struct game * game)
+static struct cmd_parser * create_parser(struct mempool * pool, struct game * game)
 {
+    struct cmd_parser * restrict me = mempool_alloc(pool, sizeof(struct cmd_parser));
+    if (me == NULL) {
+        panic("Can not create cmd_parser.");
+    }
+
     me->keyword_tracker = build_keyword_tracker(root_level_keywords, pool, KW_TRACKER__IGNORE_CASE);
     if (me->keyword_tracker == NULL) {
         panic("Can not create keyword_traker.");
     }
 
     me->game = game;
+    return me;
 }
 
 static void error(struct cmd_parser * restrict me, const char * fmt, ...) __attribute__ ((format (printf, 2, 3))); 
@@ -155,15 +158,14 @@ int main()
     char * line = 0;
     size_t len = 0;
 
-    struct mempool * restrict pool = create_mempool(16000);
+    struct mempool * restrict pool = create_mempool(64*1024);
     if (pool == NULL) {
-        panic("Can not create_mempool(16000)\n");
+        panic("Can not create_mempool(64k)\n");
         return 1;
     }
 
-    struct game game;
-    struct cmd_parser parser;
-    init_parser(&parser, pool, &game);
+    struct game * game = create_game(pool);
+    struct cmd_parser * parser = create_parser(pool, game);
 
     for (;; ) {
         ssize_t hasRead = getline(&line, &len, stdin);
@@ -171,7 +173,7 @@ int main()
             break;
         }
 
-        int isQuit = process_cmd(&parser, line);
+        int isQuit = process_cmd(parser, line);
         if (isQuit) {
             break;
         }

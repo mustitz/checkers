@@ -106,14 +106,14 @@ void add_mam_takes(struct move_ctx * restrict ctx)
             bitboard_t tmp = mt->current;
             do {
                 struct position * restrict answer = ctx->answers + ctx->answer_count;
-                answer->active = ctx->position.active ^ 1;
+                answer->active = ctx->position->active ^ 1;
 
-                int OUR_ALL = IDX_ALL | ctx->position.active;
-                int OUR_SIM = IDX_SIM | ctx->position.active;
+                int OUR_ALL = IDX_ALL | ctx->position->active;
+                int OUR_SIM = IDX_SIM | ctx->position->active;
                 int HIS_ALL = OUR_ALL ^ 1;
                 int HIS_SIM = OUR_SIM ^ 1;
 
-                const bitboard_t * now = ctx->position.bitboards;
+                const bitboard_t * now = ctx->position->bitboards;
 
                 answer->bitboards[OUR_ALL] = now[OUR_ALL] ^ mt->from;
                 answer->bitboards[OUR_SIM] = now[OUR_SIM] & answer->bitboards[OUR_ALL];
@@ -140,7 +140,7 @@ void add_mam_takes(struct move_ctx * restrict ctx)
 
 void gen_mam_takes(struct move_ctx * restrict ctx)
 {
-    const struct position * position = &ctx->position;
+    const struct position * position = ctx->position;
     side_t active = position->active;
     const bitboard_t * bitboards = position->bitboards;
     bitboard_t mams = bitboards[IDX_ALL | active] ^ bitboards[IDX_SIM | active];
@@ -395,14 +395,14 @@ void add_sim_takes(struct move_ctx * restrict ctx, side_t active)
 
         if (is_over) {
             struct position * restrict answer = ctx->answers + ctx->answer_count;
-            answer->active = ctx->position.active ^ 1;
+            answer->active = ctx->position->active ^ 1;
 
-            int OUR_ALL = IDX_ALL | ctx->position.active;
-            int OUR_SIM = IDX_SIM | ctx->position.active;
+            int OUR_ALL = IDX_ALL | ctx->position->active;
+            int OUR_SIM = IDX_SIM | ctx->position->active;
             int HIS_ALL = OUR_ALL ^ 1;
             int HIS_SIM = OUR_SIM ^ 1;
 
-            const bitboard_t * now = ctx->position.bitboards;
+            const bitboard_t * now = ctx->position->bitboards;
 
             answer->bitboards[OUR_ALL] = now[OUR_ALL] ^ st->from;
             answer->bitboards[OUR_SIM] = now[OUR_SIM] & answer->bitboards[OUR_ALL];
@@ -428,7 +428,7 @@ void add_sim_takes(struct move_ctx * restrict ctx, side_t active)
 
 void gen_sim_takes(struct move_ctx * restrict ctx)
 {
-    const struct position * position = &ctx->position;
+    const struct position * position = ctx->position;
     enum side_t active = position->active;
     const bitboard_t * bitboards = position->bitboards;
 
@@ -585,7 +585,7 @@ void gen_sim_takes(struct move_ctx * restrict ctx)
 
 void gen_sim_moves(struct move_ctx * restrict ctx)
 {
-    const struct position * position = &ctx->position;
+    const struct position * position = ctx->position;
     enum side_t active = position->active;
     const bitboard_t * bitboards = position->bitboards;
 
@@ -593,8 +593,8 @@ void gen_sim_moves(struct move_ctx * restrict ctx)
     ctx->all = bitboards[IDX_ALL_0] | bitboards[IDX_ALL_1];
     bitboard_t empty = ~ctx->all; 
 
-    int OUR_ALL = IDX_ALL | ctx->position.active;
-    int OUR_SIM = IDX_SIM | ctx->position.active;
+    int OUR_ALL = IDX_ALL | ctx->position->active;
+    int OUR_SIM = IDX_SIM | ctx->position->active;
     int HIS_ALL = OUR_ALL ^ 1;
     int HIS_SIM = OUR_SIM ^ 1;
 
@@ -607,7 +607,7 @@ void gen_sim_moves(struct move_ctx * restrict ctx)
             try_1 ^= current;
 
             struct position * restrict answer = ctx->answers + ctx->answer_count;
-            answer->active = ctx->position.active ^ 1;
+            answer->active = ctx->position->active ^ 1;
 
             bitboard_t from = current >> 1;
 
@@ -635,7 +635,7 @@ void gen_sim_moves(struct move_ctx * restrict ctx)
             try_7 ^= current;
 
             struct position * restrict answer = ctx->answers + ctx->answer_count;
-            answer->active = ctx->position.active ^ 1;
+            answer->active = ctx->position->active ^ 1;
 
             bitboard_t from = rotate_d7(current);
 
@@ -668,7 +668,7 @@ void gen_sim_moves(struct move_ctx * restrict ctx)
             try_1 ^= current;
 
             struct position * restrict answer = ctx->answers + ctx->answer_count;
-            answer->active = ctx->position.active ^ 1;
+            answer->active = ctx->position->active ^ 1;
 
             bitboard_t from = current << 1;
 
@@ -696,7 +696,7 @@ void gen_sim_moves(struct move_ctx * restrict ctx)
             try_7 ^= current;
 
             struct position * restrict answer = ctx->answers + ctx->answer_count;
-            answer->active = ctx->position.active ^ 1;
+            answer->active = ctx->position->active ^ 1;
 
             bitboard_t from = rotate_u7(current);
 
@@ -723,15 +723,15 @@ void gen_sim_moves(struct move_ctx * restrict ctx)
 
 void gen_mam_moves(struct move_ctx * restrict ctx)
 {
-    const struct position * position = &ctx->position;
+    const struct position * position = ctx->position;
     side_t active = position->active;
     const bitboard_t * bitboards = position->bitboards;
     bitboard_t mams = bitboards[IDX_ALL | active] ^ bitboards[IDX_SIM | active];
     ctx->all = bitboards[IDX_ALL_0] | bitboards[IDX_ALL_1];
     ctx->enemy = bitboards[IDX_ALL_1 ^ active];
 
-    int OUR_ALL = IDX_ALL | ctx->position.active;
-    int OUR_SIM = IDX_SIM | ctx->position.active;
+    int OUR_ALL = IDX_ALL | ctx->position->active;
+    int OUR_SIM = IDX_SIM | ctx->position->active;
     int HIS_ALL = OUR_ALL ^ 1;
     int HIS_SIM = OUR_SIM ^ 1;
 
@@ -775,7 +775,7 @@ void gen_mam_moves(struct move_ctx * restrict ctx)
             current = next & (-next);
 
             struct position * restrict answer = ctx->answers + ctx->answer_count;
-            answer->active = ctx->position.active ^ 1;
+            answer->active = ctx->position->active ^ 1;
 
             answer->bitboards[OUR_ALL] = position->bitboards[OUR_ALL] ^ current ^ from;
             answer->bitboards[OUR_SIM] = position->bitboards[OUR_SIM];
