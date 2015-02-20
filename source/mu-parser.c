@@ -349,7 +349,7 @@ static int test_parser()
     test_skip_spaces("123", '1');
 
     struct mempool * restrict mempool = create_mempool(64000);
-    struct keyword_tracker * restrict tracker = build_keyword_tracker(test_keywords, mempool);
+    struct keyword_tracker * restrict tracker = build_keyword_tracker(test_keywords, mempool, 0);
     if (tracker == NULL) {
         test_fail("build_keyword_tracker returns NULL.");
     }
