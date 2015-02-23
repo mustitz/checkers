@@ -271,3 +271,18 @@ void print_bitboard(const char * prefix, bitboard_t bb)
         printf(",%s%s", prefix, lower_str[i]);
     }
 }
+
+static inline const unsigned char * skip_spaces(const unsigned char * fen)
+{
+    for (;;) {
+        if (*fen == '\0') return fen;
+        if (*fen > ' ') return fen;
+        ++fen;
+    }
+
+}
+
+void game_set_position(struct game * restrict me, const struct position * position)
+{
+    printf("Not implemented yet.\n");
+}

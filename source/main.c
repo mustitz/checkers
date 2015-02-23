@@ -157,14 +157,127 @@ static void process_move_list(struct cmd_parser * restrict me)
     }
 }
 
+static int parse_fen(struct cmd_parser * restrict me, struct position * restrict position);
+
 static void process_fen(struct cmd_parser * restrict me)
 {
     struct line_parser * restrict lp = &me->line_parser;
     if (parser_check_eol(lp)) {
         game_print_fen(me->game);
     } else {
-        error(me, "End of line expected (FEN command is parsed), but something was found.");
+        struct position new_position;
+        if (parse_fen(me, &new_position) == 0) {
+            game_set_position(me->game, &new_position);
+        }
     }
+}
+
+static int parse_fen(struct cmd_parser * restrict me, struct position * restrict position)
+{
+    memset(position, 0, sizeof(struct position));
+
+    struct line_parser * restrict lp = &me->line_parser;
+
+    parser_skip_spaces(lp);
+
+    position->active = -1;
+    unsigned char activeSideCh = *lp->current++;
+    if (activeSideCh == 'W' || activeSideCh == 'w') {
+        position->active = WHITE;
+    }
+    if (activeSideCh == 'B' || activeSideCh == 'b') {
+        position->active = BLACK;
+    }
+    if (position->active < 0) {
+        error(me, "Invalid active side char in fen, only 'W' and 'B' is allowed.");
+        return 1;
+    }
+
+    parser_skip_spaces(lp);
+    if (*lp->current++ != ':') {
+        error(me, "Colon synbol ':' expected in fen.");
+        return 2;
+    }
+
+    for (;;) {
+        parser_skip_spaces(lp);
+        if (*lp->current == '\0') {
+            break;
+        }
+
+        int idx_all = -1;
+        unsigned char sideCh = *lp->current++;
+        if (sideCh == 'W' || sideCh == 'w') {
+            idx_all = IDX_ALL_0;
+        }
+        if (sideCh == 'B' || sideCh == 'b') {
+            idx_all = IDX_ALL_1;
+        }
+        if (idx_all < 0) {
+            error(me, "Invalid side char in fen, only 'W' and 'B' is allowed.");
+            return 3;
+        }
+
+        for (;;) {
+            parser_skip_spaces(lp);
+            int is_king = 0;
+            if (*lp->current == 'K' || *lp->current == 'k') {
+                is_king = 1;
+                ++lp->current;
+                parser_skip_spaces(lp);
+            }
+
+            if (*lp->current < 'a' || *lp->current > 'h') {
+                error(me, "File character (a letter from 'a' to 'h') expected.");
+                return 4;
+            }
+
+            int file = *lp->current++ - 'a';
+
+            if (*lp->current < '1' || *lp->current > '8') {
+                error(me, "Rank character (a digit from '1' from '8') expected.");
+                return 5;
+            }
+
+            int rank = *lp->current++ - '1';
+
+            int index = file + 8*rank;
+            square_t sq = index_to_square[index];
+            position->bitboards[idx_all] |= MASK(sq);
+            if (!is_king) {
+                position->bitboards[idx_all + IDX_SIM] |= MASK(sq);
+            }
+
+            parser_skip_spaces(lp);
+            unsigned char delimeter = *lp->current;
+            if (delimeter == ',') {
+                ++lp->current;
+                continue;
+            }
+            if (delimeter == ':') {
+                ++lp->current;
+                break;
+            }
+            if (delimeter == '\0') {
+                break;
+            }
+
+            error(me, "Invalid delimeter, ',' or ':' or EOL expected.");
+            return 6;
+        }
+    }
+
+    if (position->bitboards[IDX_ALL_0] == 0) {
+        error(me, "No white checkers on the board.");
+        return 7;
+    }
+
+    if (position->bitboards[IDX_ALL_1] == 0) {
+        error(me, "No black checkers on the board.");
+        return 7;
+    }
+
+    return 0;
 }
 
 int main()
