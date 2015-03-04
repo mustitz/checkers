@@ -284,5 +284,6 @@ static inline const unsigned char * skip_spaces(const unsigned char * fen)
 
 void game_set_position(struct game * restrict me, const struct position * position)
 {
-    printf("Not implemented yet.\n");
+    *me->position = *position;
+    me->verbose_move_count = -1;
 }
