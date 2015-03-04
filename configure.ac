@@ -71,7 +71,7 @@ AM_SILENT_RULES([yes])
 
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_FILES([Makefile source/Makefile include/Makefile validation/Makefile])
-AC_CONFIG_FILES([validation/run-insider], [chmod +x validation/run-insider])
+AC_CONFIG_FILES([validation/validation.sh], [chmod +x validation/validation.sh])
 
 
 AC_OUTPUT

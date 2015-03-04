@@ -33,4 +33,4 @@ Makefile.in
 /source/magic-tables.c
 
 /validation/insider
-/validation/run-insider
+/validation/validation.sh
