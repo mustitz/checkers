@@ -2,7 +2,7 @@ LOG_DRIVER = ./validation.sh
 
 check_PROGRAMS = insider
 
-insider_CFLAGS = -I../include
+insider_CFLAGS = -I${srcdir}/../include
 insider_SOURCES = insider.c
 
 IO_TESTS = 001-empty.io 002-start-fen.io

@@ -112,6 +112,7 @@ fi
 if test $# -eq 0; then
   usage_error "missing argument"
 fi
+test_file=$@
 
 if test $color_tests = yes; then
   red='[0;31m' # Red.
@@ -152,8 +153,8 @@ if test "x$test_name" = "xrun-insider"; then
     exit
 fi
 
-grep '^>' $test_name | sed 's/^>//g' >input.txt
-grep -v '^>' $test_name >expected.txt
+grep '^>' $test_file | sed 's/^>//g' >input.txt
+grep -v '^>' $test_file >expected.txt
 cmd="../source/rus-checkers <input.txt"
 run_test ">output.txt"
 
