@@ -33,7 +33,8 @@ IO_TESTS = \
 	025-wm-long-take.io \
 	026-bm-long-take.io \
 	027-wm-take-crazy.io \
-	028-bm-take-crazy.io
+	028-bm-take-crazy.io \
+	029-petrov-ziric-game.io
 
 
 	
