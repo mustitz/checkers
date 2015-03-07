@@ -132,13 +132,16 @@ static void game_gen_verbose_moves(struct game * restrict me)
             max_indexes[j] = pop_count(bitboards[j]);
         }
 
+        bitboard_t current[14];
+        memcpy(current, bitboards, 14 * sizeof(bitboard_t));
+
         int k;
         do {
 
             struct verbose_move * restrict verbose_move = me->verbose_moves + me->verbose_move_count;
             for (int j=0; j<12; ++j) {
                 if (j < bitboard_count) {
-                    square_t sq = extract_first_square(bitboards + j);
+                    square_t sq = get_first_square(current[j]);
                     verbose_move->squares[j] = square_to_index[sq]; 
                 } else {
                     verbose_move->squares[j] = -1;
@@ -158,10 +161,13 @@ static void game_gen_verbose_moves(struct game * restrict me)
                 }
                 ++indexes[k];
                 if (indexes[k] < max_indexes[k]) {
+                    current[k] &= current[k] - 1;
                     break;
                 }
 
-                indexes[k++] = 0;
+                indexes[k] = 0;
+                current[k] = bitboards[k];
+                k++;
             }
         } while (k < bitboard_count);
     }
