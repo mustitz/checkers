@@ -11,7 +11,17 @@ IO_TESTS = \
 	003-simple-moves.io \
 	004-black-s-moves.io \
 	005-ws-moves-complex.io \
-	006-bs-moves-complex.io
+	006-bs-moves-complex.io \
+	007-ws-take.io \
+	008-bs-take.io \
+	009-ws-long-take.io \
+	010-bs-long-take.io \
+	011-ws-should-take.io \
+	012-bs-should-take.io \
+	013-ws-two-takes.io \
+	014-bs-two-takes.io \
+	015-ws-max-long-take.io \
+	016-bs-max-long-take.io
 	
 TESTS = run-insider $(IO_TESTS)
 
