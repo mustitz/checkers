@@ -8,7 +8,8 @@
 #define KW_QUIT          1
 #define KW_MOVE          2
 #define KW_LIST          3
-#define KW_FEN           4
+#define KW_SELECT        4
+#define KW_FEN           5
 
 #define ITEM(name) { #name, KW_##name }
 struct keyword_desc root_level_keywords[] = {
@@ -16,6 +17,7 @@ struct keyword_desc root_level_keywords[] = {
     ITEM(QUIT),
     ITEM(MOVE),
     ITEM(LIST),
+    ITEM(SELECT),
     ITEM(FEN),
     { NULL, 0 }
 };
@@ -126,6 +128,7 @@ static int process_quit(struct cmd_parser * restrict me)
 }
 
 static void process_move_list(struct cmd_parser * restrict me);
+static void process_move_select(struct cmd_parser * restrict me);
 
 static void process_move(struct cmd_parser * restrict me)
 {
@@ -142,6 +145,8 @@ static void process_move(struct cmd_parser * restrict me)
     switch (keyword) {
         case KW_LIST:
             return process_move_list(me);
+        case KW_SELECT:
+            return process_move_select(me);
     }
 
     error(me, "Unexpected keyword in MOVE command.");
@@ -155,6 +160,25 @@ static void process_move_list(struct cmd_parser * restrict me)
     } else {
         error(me, "End of line expected (MOVE LIST command is parsed), but something was found.");
     }
+}
+
+static void process_move_select(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    parser_skip_spaces(lp);
+
+    int num;
+    int err = parser_try_int(lp, &num);
+    if (err != 0) {
+        return error(me, "Integer constant expected.");
+    }
+
+    if (parser_check_eol(lp)) {
+        game_move_select(me->game, num);
+    } else {
+        error(me, "End of line expected (MOVE SELECT n is parser), but something was found.");
+    }
+
 }
 
 static int parse_fen(struct cmd_parser * restrict me, struct position * restrict position);

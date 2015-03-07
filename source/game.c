@@ -72,16 +72,13 @@ struct game * create_game(struct mempool * restrict pool)
 
 
 static void game_gen_verbose_moves(struct game * restrict me);
-static void game_print_verbose_moves(struct game * restrict me);
 
-void game_move_list(struct game * restrict me)
+static void game_gen_moves(struct game * restrict me)
 {
     if (me->verbose_move_count == -1) {
         user_friendly_gen_moves(me->move_ctx);
         game_gen_verbose_moves(me);
     }
-
-    game_print_verbose_moves(me);
 }
 
 static int cmp_verbose_moves(const void * a, const void * b)
@@ -175,6 +172,18 @@ static void game_gen_verbose_moves(struct game * restrict me)
     qsort(me->verbose_moves, me->verbose_move_count, sizeof(struct verbose_move), cmp_verbose_moves);
 }
 
+
+
+static void game_print_verbose_moves(struct game * restrict me);
+
+void game_move_list(struct game * restrict me)
+{
+    game_gen_moves(me);
+    game_print_verbose_moves(me);
+}
+
+
+
 static void print_verbose_move(const struct verbose_move * verbose_move);
 
 static void game_print_verbose_moves(struct game * restrict me)
@@ -193,6 +202,28 @@ static void print_verbose_move(const struct verbose_move * verbose_move)
         printf("%s%s", delimeter, lower_index_str(verbose_move->squares[i]));
     }
     printf("\n");
+}
+
+void game_move_select(struct game * restrict me, int num)
+{
+    if (num <= 0) {
+        printf("Error: move number should pe positive.\n");
+        return;
+    }
+
+    game_gen_moves(me);
+    if (me->verbose_move_count == 0) {
+        printf("Error: no moves possible.\n");
+        return;
+    }
+
+    if (num > me->verbose_move_count) {
+        printf("Error: invalid move no, should be in range from 1 to %d.\n", me->verbose_move_count);
+        return;
+    }
+
+    int answer_index = me->verbose_moves[num-1].index;
+    game_set_position(me, me->move_ctx->answers + answer_index);
 }
 
 void print_side(const char * side, bitboard_t sim, bitboard_t mam);
