@@ -742,10 +742,10 @@ void gen_mam_moves(struct move_ctx * restrict ctx)
         from = mams & (-mams);
         square_t sq = get_first_square(from);
 
-        bitboard_t neighbor_u1 = from << 1;
-        bitboard_t neighbor_d1 = from >> 1;
-        bitboard_t neighbor_u7 = rotate_u7(from);
-        bitboard_t neighbor_d7 = rotate_d7(from);
+        bitboard_t neighbor_u1 = (from & can_move_u1) << 1;
+        bitboard_t neighbor_d1 = (from & can_move_d1) >> 1;
+        bitboard_t neighbor_u7 = rotate_u7(from & can_move_u7);
+        bitboard_t neighbor_d7 = rotate_d7(from & can_move_d7);
 
         bitboard_t u1 = (neighbor_u1 & ctx->all) ? 0 : BOARD;
         bitboard_t d1 = (neighbor_d1 & ctx->all) ? 0 : BOARD;
