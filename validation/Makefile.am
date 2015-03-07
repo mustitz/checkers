@@ -31,7 +31,10 @@ IO_TESTS = \
 	023-wm-take.io \
 	024-bm-take.io \
 	025-wm-long-take.io \
-	026-bm-long-take.io
+	026-bm-long-take.io \
+	027-wm-take-crazy.io \
+	028-bm-take-crazy.io
+
 
 	
 TESTS = run-insider $(IO_TESTS)
