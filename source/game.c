@@ -11,6 +11,7 @@ struct game * create_game(struct mempool * restrict pool)
         panic("Can not allocate me in create_game.");
     }
 
+    me->ai = NULL;
     me->verbose_move_count = -1;
 
     me->position = mempool_alloc(pool, sizeof(struct position));
@@ -323,4 +324,22 @@ void game_set_position(struct game * restrict me, const struct position * positi
 {
     *me->position = *position;
     me->verbose_move_count = -1;
+}
+
+void game_ai_select(struct game * restrict me)
+{
+    if (me->ai == NULL) {
+        me->ai = create_ai();
+        if (me->ai == NULL) {
+            printf("Error: can not create AI object, create_ai returns NULL.\n");
+            return;
+        }
+    }
+}
+
+void game_ai_free(struct game * restrict me)
+{
+    struct ai * restrict ai = me->ai;
+    me->ai = NULL;
+    ai_free(ai);
 }

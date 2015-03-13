@@ -10,6 +10,7 @@
 #define KW_LIST          3
 #define KW_SELECT        4
 #define KW_FEN           5
+#define KW_AI            6
 
 #define ITEM(name) { #name, KW_##name }
 struct keyword_desc root_level_keywords[] = {
@@ -19,6 +20,7 @@ struct keyword_desc root_level_keywords[] = {
     ITEM(LIST),
     ITEM(SELECT),
     ITEM(FEN),
+    ITEM(AI),
     { NULL, 0 }
 };
 #undef ITEM
@@ -75,6 +77,7 @@ static int read_keyword(struct cmd_parser * restrict me)
 static int process_quit(struct cmd_parser * restrict me);
 static void process_move(struct cmd_parser * restrict me);
 static void process_fen(struct cmd_parser * restrict me);
+static void process_ai(struct cmd_parser * restrict me);
 
 static int process_cmd(struct cmd_parser * restrict me, const char * cmd)
 {
@@ -107,6 +110,9 @@ static int process_cmd(struct cmd_parser * restrict me, const char * cmd)
             break;
         case KW_FEN:
             process_fen(me);
+            break;
+        case KW_AI:
+            process_ai(me);
             break;
         default:
             error(me, "Unexpected keyword at the begginning of the line.");
@@ -304,6 +310,38 @@ static int parse_fen(struct cmd_parser * restrict me, struct position * restrict
     return 0;
 }
 
+static void process_ai_select(struct cmd_parser * restrict me);
+
+static void process_ai(struct cmd_parser * restrict me)
+{
+    int keyword = read_keyword(me);
+
+    if (keyword == -1) {
+        return error(me, "Invalid lexem in AI command.");
+    }
+
+    if (keyword == 0) {
+        return error(me, "Invalid keyword in AI command.");
+    }
+
+    switch (keyword) {
+        case KW_SELECT:
+            return process_ai_select(me);
+    }
+
+    error(me, "Unexpected keyword in AI command.");
+}
+
+static void process_ai_select(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    if (parser_check_eol(lp)) {
+        game_ai_select(me->game);
+    } else {
+        error(me, "End of line expected (AI SELECT command is parsed), but something was found.");
+    }
+}
+
 int main()
 {
     srand(time(0));
@@ -332,6 +370,7 @@ int main()
         }
     }
 
+    game_ai_free(game);
     free_mempool(pool);
 
     if (line) {

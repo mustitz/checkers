@@ -217,6 +217,40 @@ void user_friendly_gen_moves(struct move_ctx * restrict ctx);
 
 
 /*
+ * AI Object
+ */
+
+struct ai
+{
+    void (*set_position)(struct ai * restrict me, const struct position * position);
+    int (*do_move)(struct ai * restrict me, const struct move_ctx * move_ctx);
+    void (*free)(struct ai * restrict me);
+};
+
+struct ai * create_random_ai();
+
+static inline void ai_set_position(struct ai * restrict me, const struct position * position)
+{
+    return me->set_position(me, position);
+}
+
+static inline int ai_do_move(struct ai * restrict me, const struct move_ctx * move_ctx)
+{
+    return me->do_move(me, move_ctx);
+}
+
+static inline void ai_free(struct ai * restrict me)
+{
+    return me->free(me);
+}
+
+#define create_ai create_random_ai
+
+
+
+
+
+/*
  * Game object
  */
 
@@ -235,6 +269,7 @@ struct game
     struct position * restrict position;
     struct move_ctx * restrict move_ctx;
     struct verbose_move * restrict verbose_moves;
+    struct ai * restrict ai;
     int verbose_move_count;
 };
 
@@ -243,5 +278,7 @@ void game_move_list(struct game * restrict me);
 void game_move_select(struct game * restrict me, int num);
 void game_print_fen(const struct game * me);
 void game_set_position(struct game * restrict me, const struct position * position);
+void game_ai_select(struct game * restrict me);
+void game_ai_free(struct game * restrict me);
 
 #endif
