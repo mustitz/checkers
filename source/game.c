@@ -335,6 +335,30 @@ void game_ai_select(struct game * restrict me)
             return;
         }
     }
+
+    game_gen_moves(me);
+    const struct move_ctx * move_ctx = me->move_ctx;
+    if (move_ctx->answer_count == 0) {
+        printf("Error: no moves possible.\n");
+        return;
+    }
+
+    int num = ai_do_move(me->ai, move_ctx);
+    if (num >= move_ctx->answer_count) {
+        printf("Engine error: invalid move no, should be in range from 0 to %d.\n", move_ctx->answer_count-1);
+        return;
+    }
+
+    for (int i=0; i<me->verbose_move_count; ++i) {
+        const struct verbose_move * verbose_move = me->verbose_moves + i;
+        if (verbose_move->index == num) {
+            game_set_position(me, me->move_ctx->answers + num);
+            print_verbose_move(verbose_move);
+            return;
+        }
+    }
+
+    printf("Internal error: verbose move is not found.\n");
 }
 
 void game_ai_free(struct game * restrict me)
