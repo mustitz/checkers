@@ -341,5 +341,7 @@ void game_ai_free(struct game * restrict me)
 {
     struct ai * restrict ai = me->ai;
     me->ai = NULL;
-    ai_free(ai);
+    if (ai != NULL) {
+        ai_free(ai);
+    }
 }
