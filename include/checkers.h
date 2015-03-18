@@ -223,7 +223,7 @@ void user_friendly_gen_moves(struct move_ctx * restrict ctx);
 struct ai
 {
     void (*set_position)(struct ai * restrict me, const struct position * position);
-    int (*do_move)(struct ai * restrict me, const struct move_ctx * move_ctx);
+    int (*do_move)(struct ai * restrict me, struct move_ctx * restrict move_ctx);
     void (*free)(struct ai * restrict me);
 };
 
@@ -235,7 +235,7 @@ static inline void ai_set_position(struct ai * restrict me, const struct positio
     return me->set_position(me, position);
 }
 
-static inline int ai_do_move(struct ai * restrict me, const struct move_ctx * move_ctx)
+static inline int ai_do_move(struct ai * restrict me, struct move_ctx * restrict move_ctx)
 {
     return me->do_move(me, move_ctx);
 }

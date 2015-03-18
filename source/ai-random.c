@@ -18,7 +18,7 @@ void random_ai_set_position(struct ai * restrict me, const struct position * pos
 {
 }
 
-int random_ai_do_move(struct ai * restrict me, const struct move_ctx * move_ctx)
+int random_ai_do_move(struct ai * restrict me, struct move_ctx * restrict move_ctx)
 {
     if (move_ctx->answer_count == 0) {
         printf("Internal error: call random_ai_do_move with move_ctx->answer_count = 0.\n");

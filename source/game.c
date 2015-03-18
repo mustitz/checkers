@@ -337,7 +337,7 @@ void game_ai_select(struct game * restrict me)
     }
 
     game_gen_moves(me);
-    const struct move_ctx * move_ctx = me->move_ctx;
+    struct move_ctx * restrict move_ctx = me->move_ctx;
     if (move_ctx->answer_count == 0) {
         printf("Error: no moves possible.\n");
         return;
