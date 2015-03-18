@@ -228,6 +228,7 @@ struct ai
 };
 
 struct ai * create_random_ai();
+struct ai * create_robust_ai();
 
 static inline void ai_set_position(struct ai * restrict me, const struct position * position)
 {
@@ -244,7 +245,7 @@ static inline void ai_free(struct ai * restrict me)
     return me->free(me);
 }
 
-#define create_ai create_random_ai
+#define create_ai create_robust_ai
 
 
 
