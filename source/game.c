@@ -77,6 +77,7 @@ static void game_gen_verbose_moves(struct game * restrict me);
 static void game_gen_moves(struct game * restrict me)
 {
     if (me->verbose_move_count == -1) {
+        me->move_ctx->position = me->position;
         user_friendly_gen_moves(me->move_ctx);
         game_gen_verbose_moves(me);
     }
@@ -337,22 +338,29 @@ void game_ai_select(struct game * restrict me)
     }
 
     game_gen_moves(me);
+    
     struct move_ctx * restrict move_ctx = me->move_ctx;
-    if (move_ctx->answer_count == 0) {
+
+    int answer_count = move_ctx->answer_count;
+    if (answer_count == 0) {
         printf("Error: no moves possible.\n");
         return;
     }
 
+    struct position * restrict answers = move_ctx->answers;
     int num = ai_do_move(me->ai, move_ctx);
-    if (num >= move_ctx->answer_count) {
-        printf("Engine error: invalid move no, should be in range from 0 to %d.\n", move_ctx->answer_count-1);
+    move_ctx->answer_count = answer_count;
+    move_ctx->answers = answers;
+
+    if (num >= answer_count) {
+        printf("Engine error: invalid move no, should be in range from 0 to %d.\n", answer_count-1);
         return;
     }
 
     for (int i=0; i<me->verbose_move_count; ++i) {
         const struct verbose_move * verbose_move = me->verbose_moves + i;
         if (verbose_move->index == num) {
-            game_set_position(me, me->move_ctx->answers + num);
+            game_set_position(me, answers + num);
             print_verbose_move(verbose_move);
             return;
         }

@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DEFAULT_DEPTH    20
+#define DEFAULT_DEPTH    10
 #define BUF_SIZE       1024
 
 struct robust_ai
@@ -93,25 +93,24 @@ static int recursive_estimate(struct robust_ai * restrict me, struct move_ctx * 
 
 int robust_ai_do_move(struct ai * restrict ai, struct move_ctx * restrict move_ctx)
 {
-    printf("robust_ai_move\n");
     struct robust_ai * restrict me = get_robust_ai(ai);
+    int answer_count = move_ctx->answer_count;
+    const struct position * answers = move_ctx->answers;
 
-    if (move_ctx->answer_count == 0) {
+    if (answer_count == 0) {
         printf("Internal error: call random_ai_do_move with move_ctx->answer_count = 0.\n");
         return -1;
     }
 
-    if (move_ctx->answer_count == 1) {
+    if (answer_count == 1) {
         return 0;
     }
 
-    void * saved = move_ctx->answers;
-    const struct position * answers = move_ctx->answers;
     move_ctx->answers = me->buf;
 
     int best_score = -0x40000000;
     int best_move = 0;
-    for (size_t i=0; i<move_ctx->answer_count; ++i) {
+    for (size_t i=0; i<answer_count; ++i) {
         me->current = answers + i;
         int score = recursive_estimate(me, move_ctx, answers + i);
         if (score > best_score) {
@@ -119,7 +118,6 @@ int robust_ai_do_move(struct ai * restrict ai, struct move_ctx * restrict move_c
         }
     }
 
-    move_ctx->answers = saved;
     return best_move;
 }
 
@@ -156,6 +154,7 @@ struct ai * create_robust_ai()
     }
 
     me->pool = pool;
+    me->buf = buf;
     me->base.set_position = robust_ai_set_position;
     me->base.do_move = robust_ai_do_move;
     me->base.free = robust_ai_free;
