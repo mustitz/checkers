@@ -3,8 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DEFAULT_DEPTH    10
-#define BUF_SIZE       1024
+#define DEFAULT_DEPTH                   32
+#define BUF_SIZE                      1024
+#define MAX_ESTIMATION              100000
+#define MIN_ESTIMATION     -MAX_ESTIMATION
 
 struct robust_ai
 {
@@ -12,7 +14,6 @@ struct robust_ai
     struct mempool * pool;
     int depth;
     struct position * buf;
-    const struct position * current;
 };
 
 struct robust_ai * get_robust_ai(struct ai * me)
@@ -52,6 +53,11 @@ static int estimate(const struct position * position)
     int op_mam_count = op_all_count - op_sim_count;
 
     int result = 0;
+    result += 35 * (my_mam_count - op_mam_count);
+    result += 10 * (my_sim_count - op_sim_count);
+    return result;
+/*
+    int result = 0;
     result += 128 * (my_sim_count - op_sim_count);
     result += 384 * (my_mam_count - op_mam_count);
     result += 64; // Bonus for move
@@ -63,6 +69,7 @@ static int estimate(const struct position * position)
     result *= game_mam_factor[my_tmp][op_tmp];
 
     return result;
+*/
 }
 
 static int recursive_estimate(struct robust_ai * restrict me, struct move_ctx * restrict move_ctx, const struct position * position)
@@ -75,20 +82,24 @@ static int recursive_estimate(struct robust_ai * restrict me, struct move_ctx * 
     move_ctx->position = position;
     gen_moves(move_ctx);
     int answer_count = move_ctx->answer_count;
-    const struct position * answers = move_ctx->answers;
+    if (answer_count == 0) {
+        return MIN_ESTIMATION + current_depth;
+    }
 
+    const struct position * answers = move_ctx->answers;
     move_ctx->answers += answer_count;
 
-    int result = -0x40000000;
+    int result = MAX_ESTIMATION;
     for (int i=0; i<answer_count; ++i) {
         int estimation = recursive_estimate(me, move_ctx, answers + i);
-        if (estimation > result) {
+        // printf("  %*s E %d\n", current_depth, "", estimation);
+        if (estimation < result) {
             result = estimation;
         }
     }
 
     move_ctx->answers -= answer_count; 
-    return result;
+    return -result;
 }
 
 int robust_ai_do_move(struct ai * restrict ai, struct move_ctx * restrict move_ctx)
@@ -108,16 +119,18 @@ int robust_ai_do_move(struct ai * restrict ai, struct move_ctx * restrict move_c
 
     move_ctx->answers = me->buf;
 
-    int best_score = -0x40000000;
+    int best_estimation = MIN_ESTIMATION;
     int best_move = 0;
     for (size_t i=0; i<answer_count; ++i) {
-        me->current = answers + i;
-        int score = recursive_estimate(me, move_ctx, answers + i);
-        if (score > best_score) {
+        int estimation = -recursive_estimate(me, move_ctx, answers + i);
+        printf(">>> %d\n", estimation);
+        if (estimation > best_estimation) {
             best_move = i;
+            best_estimation = estimation;
         }
     }
 
+    printf("Estimation: %d\n", best_estimation);
     return best_move;
 }
 
