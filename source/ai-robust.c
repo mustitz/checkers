@@ -2,11 +2,26 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define DEFAULT_DEPTH                   32
 #define BUF_SIZE                      1024
 #define MAX_ESTIMATION              100000
 #define MIN_ESTIMATION     -MAX_ESTIMATION
+
+static unsigned long int next = 1;
+  
+static int random10()
+{
+  next = next * 1103515245 + 12345;
+  unsigned int result = (next/65536) % 10;
+  return result;
+}
+
+static void randomize()
+{
+   next = time(NULL);
+}
 
 struct robust_ai
 {
@@ -83,7 +98,7 @@ static int recursive_estimate(struct robust_ai * restrict me, struct move_ctx * 
     gen_moves(move_ctx);
     int answer_count = move_ctx->answer_count;
     if (answer_count == 0) {
-        return MIN_ESTIMATION + current_depth;
+        return MIN_ESTIMATION + 10 * current_depth;
     }
 
     const struct position * answers = move_ctx->answers;
@@ -123,14 +138,15 @@ int robust_ai_do_move(struct ai * restrict ai, struct move_ctx * restrict move_c
     int best_move = 0;
     for (size_t i=0; i<answer_count; ++i) {
         int estimation = -recursive_estimate(me, move_ctx, answers + i);
-        printf(">>> %d\n", estimation);
+        // printf(">>> %d\n", estimation);
+        estimation += random10();
         if (estimation > best_estimation) {
             best_move = i;
             best_estimation = estimation;
         }
     }
 
-    printf("Estimation: %d\n", best_estimation);
+    // printf("Estimation: %d\n", best_estimation);
     return best_move;
 }
 
@@ -142,6 +158,8 @@ void robust_ai_free(struct ai * restrict ai)
 
 struct ai * create_robust_ai()
 {
+    randomize();
+
     size_t size;
 
     struct mempool * pool = create_mempool(1024);
