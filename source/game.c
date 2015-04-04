@@ -4,6 +4,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef struct ai * (*create_ai_func)();
+struct ai_desc
+{
+    const char * name;
+    create_ai_func create;
+};
+
+struct ai_desc ai_list[] = {
+    { "robust", &create_robust_ai },
+    { "random", &create_random_ai },
+    { NULL, NULL }
+};
+
 struct game * create_game(struct mempool * restrict pool)
 {
     struct game * me = mempool_alloc(pool, sizeof(struct game));
@@ -13,6 +26,7 @@ struct game * create_game(struct mempool * restrict pool)
 
     me->ai = NULL;
     me->verbose_move_count = -1;
+    me->current_ai = -1;
 
     me->position = mempool_alloc(pool, sizeof(struct position));
     if (me->position == NULL) {
@@ -373,7 +387,43 @@ void game_ai_free(struct game * restrict me)
 {
     struct ai * restrict ai = me->ai;
     me->ai = NULL;
+    me->current_ai = -1;
     if (ai != NULL) {
         ai_free(ai);
     }
+}
+
+void game_ai_list(struct game * restrict me)
+{
+    const struct ai_desc * ai_desc = ai_list;
+    for (int i = 0; ai_desc[i].name != NULL; ++i) {
+        const char * is_selected = i == me->current_ai ? "*" : "";
+        printf("%1s%s\n", is_selected, ai_desc[i].name);
+    }
+}
+
+static void game_set_ai_desc(struct game * restrict me, int i);
+
+void game_set_ai(struct game * restrict me, const char * name, int name_len)
+{
+    for (int i = 0; ai_list[i].name != NULL; ++i) {
+        if (strncmp(ai_list[i].name, name, name_len) == 0) {
+            return game_set_ai_desc(me, i);
+        }
+    }
+
+    printf("Error: ai “%*s” is not found.\n", name_len, name);
+}
+
+static void game_set_ai_desc(struct game * restrict me, int i)
+{
+    game_ai_free(me);
+
+    me->ai = ai_list[i].create();
+    if (me->ai == NULL) {
+        printf("Error: can not create AI object, create_ai returns NULL.\n");
+        return;
+    }
+
+    me->current_ai = i;
 }

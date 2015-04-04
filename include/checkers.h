@@ -272,6 +272,7 @@ struct game
     struct verbose_move * restrict verbose_moves;
     struct ai * restrict ai;
     int verbose_move_count;
+    int current_ai;
 };
 
 struct game * create_game(struct mempool * restrict pool);
@@ -281,5 +282,7 @@ void game_print_fen(const struct game * me);
 void game_set_position(struct game * restrict me, const struct position * position);
 void game_ai_select(struct game * restrict me);
 void game_ai_free(struct game * restrict me);
+void game_ai_list(struct game * restrict me);
+void game_set_ai(struct game * restrict me, const char * name, int name_len);
 
 #endif

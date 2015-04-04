@@ -11,6 +11,7 @@
 #define KW_SELECT        4
 #define KW_FEN           5
 #define KW_AI            6
+#define KW_SET           7
 
 #define ITEM(name) { #name, KW_##name }
 struct keyword_desc root_level_keywords[] = {
@@ -21,6 +22,7 @@ struct keyword_desc root_level_keywords[] = {
     ITEM(SELECT),
     ITEM(FEN),
     ITEM(AI),
+    ITEM(SET),
     { NULL, 0 }
 };
 #undef ITEM
@@ -78,6 +80,7 @@ static int process_quit(struct cmd_parser * restrict me);
 static void process_move(struct cmd_parser * restrict me);
 static void process_fen(struct cmd_parser * restrict me);
 static void process_ai(struct cmd_parser * restrict me);
+static void process_set(struct cmd_parser * restrict me);
 
 static int process_cmd(struct cmd_parser * restrict me, const char * cmd)
 {
@@ -113,6 +116,9 @@ static int process_cmd(struct cmd_parser * restrict me, const char * cmd)
             break;
         case KW_AI:
             process_ai(me);
+            break;
+        case KW_SET:
+            process_set(me);
             break;
         default:
             error(me, "Unexpected keyword at the begginning of the line.");
@@ -311,6 +317,7 @@ static int parse_fen(struct cmd_parser * restrict me, struct position * restrict
 }
 
 static void process_ai_select(struct cmd_parser * restrict me);
+static void process_ai_list(struct cmd_parser * restrict me);
 
 static void process_ai(struct cmd_parser * restrict me)
 {
@@ -327,6 +334,8 @@ static void process_ai(struct cmd_parser * restrict me)
     switch (keyword) {
         case KW_SELECT:
             return process_ai_select(me);
+        case KW_LIST:
+            return process_ai_list(me);
     }
 
     error(me, "Unexpected keyword in AI command.");
@@ -340,6 +349,60 @@ static void process_ai_select(struct cmd_parser * restrict me)
     } else {
         error(me, "End of line expected (AI SELECT command is parsed), but something was found.");
     }
+}
+
+static void process_ai_list(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    if (parser_check_eol(lp)) {
+        game_ai_list(me->game);
+    } else {
+        error(me, "End of line expected (AI LIST command is parsed), but something was found.");
+    }
+}
+
+static void process_set_ai(struct cmd_parser * restrict me);
+
+static void process_set(struct cmd_parser * restrict me)
+{
+    int keyword = read_keyword(me);
+
+    if (keyword == -1) {
+        return error(me, "Invalid lexem in SET command.");
+    }
+
+    if (keyword == 0) {
+        return error(me, "Invalid keyword in SET command.");
+    }
+
+    switch (keyword) {
+        case KW_AI:
+            return process_set_ai(me);
+    }
+
+    error(me, "Unexpected keyword in SET command.");
+}
+
+static void process_set_ai(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    parser_skip_spaces(lp);
+    if (*lp->current == '=') {
+        ++lp->current;
+        parser_skip_spaces(lp);
+    }
+
+    const unsigned char * begin = lp->current;
+    const unsigned char * end = lp->current;
+
+    for (; *lp->current != '\0'; ++lp->current) {
+        if (*lp->current > ' ') {
+            end = lp->current + 1;
+        }
+    }
+
+    const char * name = (const char *)begin;
+    game_set_ai(me->game, name, end-begin);
 }
 
 int main()
