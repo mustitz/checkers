@@ -19,9 +19,7 @@ AM_CONDITIONAL(DEBUG_MODE, test x"$debug" = x"true")
 
 
 
-AC_SUBST([VALGRIND], [valgrind])
 valgrind_withval=auto
-use_valgrind=false
 
 AC_ARG_WITH([valgrind],
   AS_HELP_STRING([--with-valrgind], [Use valgrind to run testsuite]),
@@ -33,34 +31,39 @@ AS_CASE(
 
   [no],
   [
+    valgrind_withval=
   ],
 
   [yes],
   [
-    AC_CHECK_PROG([have_valgrind], [$VALGRIND], [yes], [no])
+    AC_CHECK_PROG([have_valgrind], [valgrind], [yes], [no])
     AS_IF(
       [test "x$have_valgrind" == "xyes"],
-      [use_valgrind=true],
+      [valgrind_withval=valgrind],
       [AC_MSG_ERROR([Valgrind not found in PATH.])])
   ],
   
   [auto],
   [
-    AC_CHECK_PROG([have_valgrind], [$VALGRIND], [yes], [no])
+    AC_CHECK_PROG([have_valgrind], [valgrind], [yes], [no])
     AS_IF(
       [test "x$have_valgrind" == "xyes"], 
-      [use_valgrind=true])
+      [valgrind_withval=valgrind],
+      [valgrind_withval=])
   ],
 
   [
-    AC_SUBST([VALGRIND], [$valgrind_withval])
-    AC_CHECK_FILE([$VALGRIND], [have_valgrind=yes], [have_valgrind=no])
+    AC_CHECK_FILE([$valgrind_withval], [have_valgrind=yes], [have_valgrind=no])
     AS_IF(
-      [test "x$have_valgrind" == "xyes"],
-      [use_valgrind=true],
-      [AC_MSG_ERROR([Valgrind not found in PATH.])])
+      [test "x$have_valgrind" != "xyes"],
+      [
+        valgrind_withval=
+        AC_MSG_ERROR([Valgrind not found in PATH.])
+      ])
   ]
 )
+
+AC_SUBST([VALGRIND], [$valgrind_withval])
 
 
 

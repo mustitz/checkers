@@ -24,12 +24,14 @@ run_test()
 {
     if test "x$valgrind" != "x"; then
         cmd="$valgrind --quiet --leak-check=full --show-reachable=yes$sup_file $cmd $1 2>valgrind.log"
+    else
+        cmd="$cmd $1"
     fi
 
     echo "CMD: $cmd" >> $log_file
     eval "$cmd &"
     pid=$!
-    (sleep 5 && kill -9 $pid) &
+    (sleep 5 && kill -9 $pid 1>/dev/null 2>&1) &
     sleep_pid=$!
     wait $pid
     estatus=$?
