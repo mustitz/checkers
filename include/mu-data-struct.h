@@ -38,7 +38,7 @@ void test_fail(const char * fmt, ...) __attribute__ ((format (printf, 1, 2)));
 
 
 
-/* 
+/*
  * Here is working with pointers and memory pool for grouping allocation operations.
  * The main idea of mempool is many allocs one free operation.
  * mempool is a good choice for many small object allocations.

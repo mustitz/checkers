@@ -50,7 +50,7 @@ static struct cmd_parser * create_parser(struct mempool * pool, struct game * ga
     return me;
 }
 
-static void error(struct cmd_parser * restrict me, const char * fmt, ...) __attribute__ ((format (printf, 2, 3))); 
+static void error(struct cmd_parser * restrict me, const char * fmt, ...) __attribute__ ((format (printf, 2, 3)));
 
 static void error(struct cmd_parser * restrict me, const char * fmt, ...)
 {
@@ -72,7 +72,7 @@ static int read_keyword(struct cmd_parser * restrict me)
 {
     struct line_parser * restrict lp = &me->line_parser;
     parser_skip_spaces(lp);
-    return parser_read_keyword(lp, me->keyword_tracker); 
+    return parser_read_keyword(lp, me->keyword_tracker);
 }
 
 

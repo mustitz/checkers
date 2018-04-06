@@ -11,7 +11,7 @@ struct random_ai
 
 struct random_ai * get_random_ai(struct ai * me)
 {
-    return move_ptr(me, -offsetof(struct random_ai, base)); 
+    return move_ptr(me, -offsetof(struct random_ai, base));
 }
 
 void random_ai_set_position(struct ai * restrict me, const struct position * position)

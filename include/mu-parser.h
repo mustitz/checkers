@@ -26,7 +26,7 @@ struct keyword_tracker_step
 };
 
 
-struct keyword_tracker 
+struct keyword_tracker
 {
     const struct keyword_desc * keyword_list;
     const struct keyword_tracker_step * first_step;

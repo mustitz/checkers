@@ -265,16 +265,16 @@ static int test_skip_spaces(const char * line, int first_non_space_ch)
 #define ITEM(name) { #name, KW_##name }
 struct keyword_desc test_keywords[] = {
     ITEM(I), ITEM(IF), ITEM(TEST),
-    ITEM(IFNULL), ITEM(IFZERO), 
+    ITEM(IFNULL), ITEM(IFZERO),
     ITEM(IF_NULL), ITEM(IF_ZERO),
     { NULL, 0 }
 };
 #undef ITEM
 
 static int test_read_keyword(
-    struct keyword_tracker * restrict tracker, 
-    const char * line, 
-    int expected_keyword_id, 
+    struct keyword_tracker * restrict tracker,
+    const char * line,
+    int expected_keyword_id,
     unsigned char next_ch
 ) {
     struct line_parser line_parser;

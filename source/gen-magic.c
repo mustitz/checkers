@@ -39,7 +39,7 @@ void recurcive_gen_permutations(int * restrict base, int base_n, const int * var
         int k = 0;
         for (int j=0; j<variable_n; ++j) {
             if (i != j) {
-                tmp[k++] = variable[j]; 
+                tmp[k++] = variable[j];
             }
         }
 
@@ -76,41 +76,41 @@ int main()
 
 static void init_square_to_index()
 {
-    tables.square_to_index[A1] = 000; 
-    tables.square_to_index[A3] = 020; 
-    tables.square_to_index[A5] = 040; 
-    tables.square_to_index[A7] = 060; 
-    tables.square_to_index[B2] = 011; 
-    tables.square_to_index[B4] = 031; 
-    tables.square_to_index[B6] = 051; 
-    tables.square_to_index[B8] = 071; 
+    tables.square_to_index[A1] = 000;
+    tables.square_to_index[A3] = 020;
+    tables.square_to_index[A5] = 040;
+    tables.square_to_index[A7] = 060;
+    tables.square_to_index[B2] = 011;
+    tables.square_to_index[B4] = 031;
+    tables.square_to_index[B6] = 051;
+    tables.square_to_index[B8] = 071;
 
-    tables.square_to_index[C1] = 002; 
-    tables.square_to_index[C3] = 022; 
-    tables.square_to_index[C5] = 042; 
-    tables.square_to_index[C7] = 062; 
-    tables.square_to_index[D2] = 013; 
-    tables.square_to_index[D4] = 033; 
-    tables.square_to_index[D6] = 053; 
-    tables.square_to_index[D8] = 073; 
+    tables.square_to_index[C1] = 002;
+    tables.square_to_index[C3] = 022;
+    tables.square_to_index[C5] = 042;
+    tables.square_to_index[C7] = 062;
+    tables.square_to_index[D2] = 013;
+    tables.square_to_index[D4] = 033;
+    tables.square_to_index[D6] = 053;
+    tables.square_to_index[D8] = 073;
 
-    tables.square_to_index[E1] = 004; 
-    tables.square_to_index[E3] = 024; 
-    tables.square_to_index[E5] = 044; 
-    tables.square_to_index[E7] = 064; 
-    tables.square_to_index[F2] = 015; 
-    tables.square_to_index[F4] = 035; 
-    tables.square_to_index[F6] = 055; 
-    tables.square_to_index[F8] = 075; 
+    tables.square_to_index[E1] = 004;
+    tables.square_to_index[E3] = 024;
+    tables.square_to_index[E5] = 044;
+    tables.square_to_index[E7] = 064;
+    tables.square_to_index[F2] = 015;
+    tables.square_to_index[F4] = 035;
+    tables.square_to_index[F6] = 055;
+    tables.square_to_index[F8] = 075;
 
-    tables.square_to_index[G1] = 006; 
-    tables.square_to_index[G3] = 026; 
-    tables.square_to_index[G5] = 046; 
-    tables.square_to_index[G7] = 066; 
-    tables.square_to_index[H2] = 017; 
-    tables.square_to_index[H4] = 037; 
-    tables.square_to_index[H6] = 057; 
-    tables.square_to_index[H8] = 077; 
+    tables.square_to_index[G1] = 006;
+    tables.square_to_index[G3] = 026;
+    tables.square_to_index[G5] = 046;
+    tables.square_to_index[G7] = 066;
+    tables.square_to_index[H2] = 017;
+    tables.square_to_index[H4] = 037;
+    tables.square_to_index[H6] = 057;
+    tables.square_to_index[H8] = 077;
 }
 
 static void init_index_to_square()
@@ -160,7 +160,7 @@ static void init_magic()
     handle_way_1(5, h4d8);
     handle_way_1(3, h6f8);
     handle_way_1(1, h8h8);
-    
+
     int a1h8[] = { A1, B2, C3, D4, E5, F6, G7, H8 };
     int a3f8[] = { A3, B4, C5, D6, E7, F8 };
     int a5d8[] = { A5, B6, C7, D8 };
@@ -196,7 +196,7 @@ static void handle_way_1(int n, const int * squares)
 
     for (int i=0; i<n; ++i) {
         for (uint32_t mask = 0; mask < 256; ++mask) {
-            
+
             bitboard_t data[4];
             process_mask(mask, n, squares, i, data);
 
@@ -398,7 +398,7 @@ static void process_mask(uint32_t mask, int n, const int * squares, int i, bitbo
 
     f = i;
     bit = 1 << f;
-    
+
     for (;;) {
 
         --f;
@@ -453,21 +453,21 @@ static void print_file()
     printf("#define __ I9\n");
     printf("square_t index_to_square[64] = {\n");
     for (int index = 0; index < 64; ++index) {
-         
+
         if ((index % 8) == 0) {
             printf("    ");
         }
-           
+
         enum square_t s = tables.index_to_square[index];
         if (s >= 0) {
-            printf("%s%s", 
-                tables.upper_square_str[s], 
+            printf("%s%s",
+                tables.upper_square_str[s],
                 (index != 63 ? "," : "")
             );
         } else {
             printf("__%s", (index != 63 ? "," : ""));
         }
-       
+
         if ((index % 8) == 7) {
             printf("\n");
         }
@@ -513,9 +513,9 @@ static void print_file()
 
     printf("struct square_magic square_magic[32] = {\n");
     for (int i=0; i<32; ++i) {
-        printf("    { 0x%08X, 0x%08X, %2d}%s\n", 
-            tables.square_magic[i].mask7, 
-            tables.square_magic[i].factor7, 
+        printf("    { 0x%08X, 0x%08X, %2d}%s\n",
+            tables.square_magic[i].mask7,
+            tables.square_magic[i].factor7,
             tables.square_magic[i].shift1,
             (i != 31 ? "," : "")
         );

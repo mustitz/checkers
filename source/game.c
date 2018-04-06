@@ -51,7 +51,7 @@ struct game * create_game(struct mempool * restrict pool)
 
     me->move_ctx->position = me->position;
 
-    me->move_ctx->sim_taking = mempool_alloc(pool, BUF_SIZE__TAKING * sizeof(struct taking)); 
+    me->move_ctx->sim_taking = mempool_alloc(pool, BUF_SIZE__TAKING * sizeof(struct taking));
     if (me->move_ctx->sim_taking == NULL) {
         panic("Can not allocate move_ctx->sim_taking in create_game.");
     }
@@ -103,7 +103,7 @@ static int cmp_verbose_moves(const void * a, const void * b)
     const struct verbose_move * verbose_move_b = b;
     const int * squares_a = verbose_move_a->squares;
     const int * squares_b = verbose_move_b->squares;
-    
+
     for (int i=0; i<12; ++i) {
         if (squares_a[i] == squares_b[i]) {
             continue;
@@ -155,7 +155,7 @@ static void game_gen_verbose_moves(struct game * restrict me)
             for (int j=0; j<12; ++j) {
                 if (j < bitboard_count) {
                     square_t sq = get_first_square(current[j]);
-                    verbose_move->squares[j] = square_to_index[sq]; 
+                    verbose_move->squares[j] = square_to_index[sq];
                 } else {
                     verbose_move->squares[j] = -1;
                 }
@@ -163,7 +163,7 @@ static void game_gen_verbose_moves(struct game * restrict me)
 
             verbose_move->len = bitboard_count;
             verbose_move->is_mam = move->is_mam;
-            verbose_move->is_taking = !! move->killed; 
+            verbose_move->is_taking = !! move->killed;
             verbose_move->index = i;
             ++me->verbose_move_count;
 
@@ -247,7 +247,7 @@ void print_side(const char * side, bitboard_t sim, bitboard_t mam);
 void game_print_fen(const struct game * me)
 {
     const struct position * position = me->position;
-    
+
     if (position->active == WHITE) {
         printf("W:");
     }
@@ -309,7 +309,7 @@ void print_bitboard(const char * prefix, bitboard_t bb)
     while (bb) {
         enum square_t sq = get_first_square(bb);
         bb &= bb - 1;
-        lower_str[i++] = lower_square_str[sq]; 
+        lower_str[i++] = lower_square_str[sq];
     }
 
     assert(i == n);
@@ -352,7 +352,7 @@ void game_ai_select(struct game * restrict me)
     }
 
     game_gen_moves(me);
-    
+
     struct move_ctx * restrict move_ctx = me->move_ctx;
 
     int answer_count = move_ctx->answer_count;

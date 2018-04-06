@@ -24,15 +24,15 @@
 
 /*
  *   BOARD GEOMETRY
- */ 
+ */
 
 typedef int square_t;
 typedef uint32_t bitboard_t;
 
 enum square_t {
     /* Illegal */ I9 = -1,
-    /*     0   */ A1,      
-    /*     1   */ H4, G5, F6, E7, D8, 
+    /*     0   */ A1,
+    /*     1   */ H4, G5, F6, E7, D8,
     /*     6   */ C1, B2, A3,
     /*     9   */ H6, G7, F8,
     /*    12   */ E1, D2, C3, B4, A5,
@@ -61,7 +61,7 @@ enum square_t {
 #define FILE_G (MASK(G1) | MASK(G3) | MASK(G5) | MASK(G7))
 #define FILE_H (MASK(H2) | MASK(H4) | MASK(H6) | MASK(H8))
 
-#define BOARD (RANK_1 | RANK_2 | RANK_3 | RANK_4 | RANK_5 | RANK_6 | RANK_7 | RANK_8) 
+#define BOARD (RANK_1 | RANK_2 | RANK_3 | RANK_4 | RANK_5 | RANK_6 | RANK_7 | RANK_8)
 
 static inline square_t get_first_square(bitboard_t bb)
 {
@@ -254,7 +254,6 @@ static inline void ai_free(struct ai * restrict me)
 /*
  * Game object
  */
-
 
 struct verbose_move
 {

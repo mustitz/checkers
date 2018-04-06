@@ -10,7 +10,7 @@
 #define MIN_ESTIMATION     -MAX_ESTIMATION
 
 static unsigned long int next = 1;
-  
+
 static int random10()
 {
   next = next * 1103515245 + 12345;
@@ -33,7 +33,7 @@ struct robust_ai
 
 struct robust_ai * get_robust_ai(struct ai * me)
 {
-    return move_ptr(me, -offsetof(struct robust_ai, base)); 
+    return move_ptr(me, -offsetof(struct robust_ai, base));
 }
 
 void robust_ai_set_position(struct ai * restrict me, const struct position * position)
@@ -76,7 +76,7 @@ static int estimate(const struct position * position)
     result += 128 * (my_sim_count - op_sim_count);
     result += 384 * (my_mam_count - op_mam_count);
     result += 64; // Bonus for move
-    
+
     result *= game_stage_factor[my_all_count + op_all_count];
 
     int my_tmp = my_mam_count <= 3 ? my_mam_count : 3;
@@ -113,7 +113,7 @@ static int recursive_estimate(struct robust_ai * restrict me, struct move_ctx * 
         }
     }
 
-    move_ctx->answers -= answer_count; 
+    move_ctx->answers -= answer_count;
     return -result;
 }
 

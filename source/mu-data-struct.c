@@ -78,7 +78,7 @@ void * mempool_alloc(struct mempool * restrict me, size_t size)
         }
 
         me->gap += me->last->avail;
-        
+
         size_t item_size = me->allocated;
         size_t min_size = 16 * sizeof(struct mempool_item);
         if (item_size < min_size) {
@@ -228,7 +228,7 @@ void strhash_set(struct strhash * restrict me, const char * name, union strhash_
 union strhash_value * strhash_get(struct strhash * restrict me, const char * name)
 {
     struct strhash__bs bs = strhash__get_bs(me, name);
-    
+
     struct strhash_item_dlist * current = bs.base->next;
     for (; current != bs.base; current = current->next) {
         struct strhash_item * item = get_strhash_item_from_dlist(current);

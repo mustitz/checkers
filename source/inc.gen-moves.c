@@ -29,7 +29,7 @@ void add_mam_takes(struct move_ctx * restrict ctx)
                 uint32_t index7 = (sm->factor7 * (all & sm->mask7)) >> 24;
                 mtm = mam_take_magic_7[sq] + index7;
             }
-            
+
             bitboard_t dead_0 = mtm->dead[0];
             bitboard_t dead_1 = mtm->dead[1];
 
@@ -157,7 +157,7 @@ void gen_mam_takes(struct move_ctx * restrict ctx)
         uint32_t index7 = (sm->factor7 * (ctx->all & sm->mask7)) >> 24;
         const struct mam_take_magic * mtm1 = mam_take_magic_1[sq] + index1;
         const struct mam_take_magic * mtm7 = mam_take_magic_7[sq] + index7;
-        
+
         bitboard_t dead;
 
         dead = mtm1->dead[0] & ctx->enemy;
@@ -250,8 +250,8 @@ void add_sim_takes(struct move_ctx * restrict ctx, side_t active)
 
         bitboard_t try_u1 = ((((st->current & possible_u1) << 1) & enemy) << 1) & empty;
         bitboard_t try_d1 = ((((st->current & possible_d1) >> 1) & enemy) >> 1) & empty;
-        bitboard_t try_u7 = rotate_u7(rotate_u7(st->current & possible_u7) & enemy) & empty; 
-        bitboard_t try_d7 = rotate_d7(rotate_d7(st->current & possible_d7) & enemy) & empty; 
+        bitboard_t try_u7 = rotate_u7(rotate_u7(st->current & possible_u7) & enemy) & empty;
+        bitboard_t try_d7 = rotate_d7(rotate_d7(st->current & possible_d7) & enemy) & empty;
 
         if (try_u1) {
             is_over = 0;
@@ -413,7 +413,7 @@ void add_sim_takes(struct move_ctx * restrict ctx, side_t active)
             answer->bitboards[HIS_SIM] = now[HIS_SIM] & answer->bitboards[HIS_ALL];
 
             #if USER_FRIENDLY
-                struct move * restrict move = ctx->moves + ctx->answer_count; 
+                struct move * restrict move = ctx->moves + ctx->answer_count;
                 move->from = st->from;
                 move->to = st->current;
                 move->killed = st->killed;
@@ -434,13 +434,13 @@ void gen_sim_takes(struct move_ctx * restrict ctx)
 
     ctx->all = bitboards[IDX_ALL_0] | bitboards[IDX_ALL_1];
     ctx->enemy = bitboards[IDX_ALL_1 ^ active];
-    bitboard_t empty = ~ctx->all; 
+    bitboard_t empty = ~ctx->all;
     bitboard_t singles = bitboards[IDX_SIM | active];
 
     bitboard_t try_u1 = ((((singles & possible_u1) << 1) & ctx->enemy) << 1) & empty;
     bitboard_t try_d1 = ((((singles & possible_d1) >> 1) & ctx->enemy) >> 1) & empty;
-    bitboard_t try_u7 = rotate_u7(rotate_u7(singles & possible_u7) & ctx->enemy) & empty; 
-    bitboard_t try_d7 = rotate_d7(rotate_d7(singles & possible_d7) & ctx->enemy) & empty; 
+    bitboard_t try_u7 = rotate_u7(rotate_u7(singles & possible_u7) & ctx->enemy) & empty;
+    bitboard_t try_d7 = rotate_d7(rotate_d7(singles & possible_d7) & ctx->enemy) & empty;
 
     while (try_u1) {
         bitboard_t current = try_u1 & (-try_u1);
@@ -581,7 +581,7 @@ void gen_sim_takes(struct move_ctx * restrict ctx)
     if (ctx->sim_taking_last) {
         add_sim_takes(ctx, active);
     }
-} 
+}
 
 void gen_sim_moves(struct move_ctx * restrict ctx)
 {
@@ -591,7 +591,7 @@ void gen_sim_moves(struct move_ctx * restrict ctx)
 
     bitboard_t our_sim = bitboards[IDX_SIM | active];
     ctx->all = bitboards[IDX_ALL_0] | bitboards[IDX_ALL_1];
-    bitboard_t empty = ~ctx->all; 
+    bitboard_t empty = ~ctx->all;
 
     int OUR_ALL = IDX_ALL | ctx->position->active;
     int OUR_SIM = IDX_SIM | ctx->position->active;
@@ -619,7 +619,7 @@ void gen_sim_moves(struct move_ctx * restrict ctx)
             answer->bitboards[HIS_SIM] = position->bitboards[HIS_SIM];
 
             #if USER_FRIENDLY
-                struct move * restrict move = ctx->moves + ctx->answer_count; 
+                struct move * restrict move = ctx->moves + ctx->answer_count;
                 move->from = from;
                 move->to = current;
                 move->killed = 0;
@@ -647,7 +647,7 @@ void gen_sim_moves(struct move_ctx * restrict ctx)
             answer->bitboards[HIS_SIM] = position->bitboards[HIS_SIM];
 
             #if USER_FRIENDLY
-                struct move * restrict move = ctx->moves + ctx->answer_count; 
+                struct move * restrict move = ctx->moves + ctx->answer_count;
                 move->from = from;
                 move->to = current;
                 move->killed = 0;
@@ -680,7 +680,7 @@ void gen_sim_moves(struct move_ctx * restrict ctx)
             answer->bitboards[HIS_SIM] = position->bitboards[HIS_SIM];
 
             #if USER_FRIENDLY
-                struct move * restrict move = ctx->moves + ctx->answer_count; 
+                struct move * restrict move = ctx->moves + ctx->answer_count;
                 move->from = from;
                 move->to = current;
                 move->killed = 0;
@@ -708,7 +708,7 @@ void gen_sim_moves(struct move_ctx * restrict ctx)
             answer->bitboards[HIS_SIM] = position->bitboards[HIS_SIM];
 
             #if USER_FRIENDLY
-                struct move * restrict move = ctx->moves + ctx->answer_count; 
+                struct move * restrict move = ctx->moves + ctx->answer_count;
                 move->from = from;
                 move->to = current;
                 move->killed = 0;
@@ -760,7 +760,7 @@ void gen_mam_moves(struct move_ctx * restrict ctx)
         uint32_t index7 = (sm->factor7 * (fake_all & sm->mask7)) >> 24;
         const struct mam_take_magic * mtm1 = mam_take_magic_1[sq] + index1;
         const struct mam_take_magic * mtm7 = mam_take_magic_7[sq] + index7;
-        
+
         u1 &= mtm1->next[0];
         d1 &= mtm1->next[1];
         u7 &= mtm7->next[0];
@@ -784,7 +784,7 @@ void gen_mam_moves(struct move_ctx * restrict ctx)
             answer->bitboards[HIS_SIM] = position->bitboards[HIS_SIM];
 
             #if USER_FRIENDLY
-                struct move * restrict move = ctx->moves + ctx->answer_count; 
+                struct move * restrict move = ctx->moves + ctx->answer_count;
                 move->from = from;
                 move->to = current;
                 move->killed = 0;
