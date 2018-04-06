@@ -284,4 +284,17 @@ void game_ai_free(struct game * restrict me);
 void game_ai_list(struct game * restrict me);
 void game_set_ai(struct game * restrict me, const char * name, int name_len);
 
+
+
+
+
+/*
+ * Endgame tablebase API
+ */
+
+int position_to_code(const struct position * const position);
+uint64_t position_to_index(
+    const struct position * const position,
+    const int code);
+
 #endif
