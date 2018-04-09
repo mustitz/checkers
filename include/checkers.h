@@ -292,6 +292,11 @@ void game_set_ai(struct game * restrict me, const char * name, int name_len);
  * Endgame tablebase API
  */
 
+static inline int bitboard_stat_to_code(const int all_0, const int sim_0)
+{
+    return ( all_0 * (all_0+3) - 2 * (sim_0+1) ) >> 1;
+}
+
 int position_to_code(const struct position * const position);
 uint64_t position_to_index(
     const struct position * const position,
