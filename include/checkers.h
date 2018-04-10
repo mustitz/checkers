@@ -302,4 +302,6 @@ uint64_t position_to_index(
     const struct position * const position,
     const int code);
 
+void debug_position_code(void);
+
 #endif

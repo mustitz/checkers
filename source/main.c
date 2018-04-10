@@ -442,7 +442,7 @@ static void process_debug_position_code(struct cmd_parser * restrict me)
         return error(me, "End of line expected (DEBUG POSITION_CODE command is parsed), but someting was found.");
     }
 
-    error(me, "Not implemented.");
+    debug_position_code();
 }
 
 int main()
