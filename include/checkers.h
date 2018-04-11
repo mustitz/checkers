@@ -294,6 +294,16 @@ void game_set_ai(struct game * restrict me, const char * name, int name_len);
 
 #define SIDE_BITBOARD_CODE_COUNT   90
 
+struct position_code_info
+{
+    int has_tablebase;
+    int is_reversed;
+    char filename[16];
+    uint64_t fr_consts[5];
+};
+
+extern struct position_code_info position_codes[SIDE_BITBOARD_CODE_COUNT][SIDE_BITBOARD_CODE_COUNT];
+
 static inline int bitboard_stat_to_code(const int all_0, const int sim_0)
 {
     return ( all_0 * (all_0+3) - 2 * (sim_0+1) ) >> 1;

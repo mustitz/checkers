@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 
+struct position_code_info position_codes[SIDE_BITBOARD_CODE_COUNT][SIDE_BITBOARD_CODE_COUNT];
+
 void debug_position_code(void)
 {
     static const int precision = 4;
