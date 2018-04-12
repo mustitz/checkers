@@ -5,15 +5,17 @@
 #include <stdio.h>
 #include <time.h>
 
-#define KW_QUIT            1
-#define KW_MOVE            2
-#define KW_LIST            3
-#define KW_SELECT          4
-#define KW_FEN             5
-#define KW_AI              6
-#define KW_SET             7
-#define KW_DEBUG           8
-#define KW_POSITION_CODE   9
+#define KW_QUIT             1
+#define KW_MOVE             2
+#define KW_LIST             3
+#define KW_SELECT           4
+#define KW_FEN              5
+#define KW_AI               6
+#define KW_SET              7
+#define KW_TB               8
+#define KW_INFO             9
+#define KW_DEBUG           10
+#define KW_POSITION_CODE   11
 
 #define ITEM(name) { #name, KW_##name }
 struct keyword_desc root_level_keywords[] = {
@@ -25,6 +27,8 @@ struct keyword_desc root_level_keywords[] = {
     ITEM(FEN),
     ITEM(AI),
     ITEM(SET),
+    ITEM(TB),
+    ITEM(INFO),
     ITEM(DEBUG),
     ITEM(POSITION_CODE),
     { NULL, 0 }
@@ -85,6 +89,7 @@ static void process_move(struct cmd_parser * restrict me);
 static void process_fen(struct cmd_parser * restrict me);
 static void process_ai(struct cmd_parser * restrict me);
 static void process_set(struct cmd_parser * restrict me);
+static void process_tb(struct cmd_parser * restrict me);
 static void process_debug(struct cmd_parser * restrict me);
 
 static int process_cmd(struct cmd_parser * restrict me, const char * cmd)
@@ -124,6 +129,9 @@ static int process_cmd(struct cmd_parser * restrict me, const char * cmd)
             break;
         case KW_SET:
             process_set(me);
+            break;
+        case KW_TB:
+            process_tb(me);
             break;
         case KW_DEBUG:
             process_debug(me);
@@ -411,6 +419,36 @@ static void process_set_ai(struct cmd_parser * restrict me)
 
     const char * name = (const char *)begin;
     game_set_ai(me->game, name, end-begin);
+}
+
+static void process_tb_info(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    if (!parser_check_eol(lp)) {
+        return error(me, "End of line expected (TB INFO command is parsed), but someting was found.");
+    }
+
+    printf("TB INFO: Not implemented\n");
+}
+
+static void process_tb(struct cmd_parser * restrict me)
+{
+    int keyword = read_keyword(me);
+
+    if (keyword == -1) {
+        return error(me, "Invalid lexem in TB command.");
+    }
+
+    if (keyword == 0) {
+        return error(me, "Invalid keyword in TB command.");
+    }
+
+    switch (keyword) {
+        case KW_INFO:
+            return process_tb_info(me);
+    }
+
+    error(me, "Unexpected keyword in TB command.");
 }
 
 static void process_debug_position_code(struct cmd_parser * restrict me);
