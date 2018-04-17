@@ -179,3 +179,33 @@ uint64_t position_to_index(
 {
     return 1;
 }
+
+
+
+/*
+ * Tests
+ */
+
+#ifdef WITH_TESTS
+
+static void check_choose(const int n, const int k, const uint64_t value)
+{
+    const uint64_t result = choose[n][k];
+    if (result != value) {
+        test_fail("Wrong choose C(%d, %d) = %lu, expected %lu.\n", n, k, result, value);
+    }
+}
+
+static int test_choose()
+{
+    init_choose();
+    check_choose(20,  2,       190);
+    check_choose(32,  5,    201376);
+    check_choose(28, 10,  13123110);
+    check_choose(32, 16, 601080390);
+    check_choose(31, 29,       465);
+    check_choose(31, 32,         0);
+    return 0;
+}
+
+#endif

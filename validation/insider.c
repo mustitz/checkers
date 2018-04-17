@@ -1,8 +1,9 @@
 #include "checkers.h"
 
-#define WITH_TESTS 
+#define WITH_TESTS
 #include "../source/mu-data-struct.c"
 #include "../source/mu-parser.c"
+#include "../source/endgame-base.c"
 
 #include <stdarg.h>
 #include <stddef.h>
@@ -16,7 +17,7 @@ int test_empty()
 }
 
 /*
- * Here is bitboard tests. 
+ * Here is bitboard tests.
  */
 
 int test_diag(int delta, const square_t * squares)
@@ -121,7 +122,7 @@ int test_bitboard()
     square_t h2b8[] = { H2, G3, F4, E5, D6, C7, B8,  I9 };
     square_t h4d8[] = { H4, G5, F6, E7, D8,  I9 };
     square_t h6f8[] = { H6, G7, F8,  I9 };
-    
+
     test_diag(7, a7b8);
     test_diag(7, a5d8);
     test_diag(7, a3f8);
@@ -155,6 +156,7 @@ struct test_item tests[] = {
     { "str_map", &test_str_map },
     { "sets", &test_sets },
     { "parser", &test_parser },
+    { "choose", &test_choose },
     { NULL, NULL }
 };
 
