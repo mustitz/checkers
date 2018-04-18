@@ -71,6 +71,22 @@ static void init_endgame_entry(
 
     const int is_reversed = wcode > bcode;
     info->is_reversed = is_reversed;
+    if (!is_reversed) {
+        info->wall = wall;
+        info->wsim = wsim;
+        info->wmam = wmam;
+        info->ball = ball;
+        info->bsim = bsim;
+        info->bmam = bmam;
+    } else {
+        info->wall = ball;
+        info->wsim = bsim;
+        info->wmam = bmam;
+        info->ball = wall;
+        info->bsim = wsim;
+        info->bmam = wmam;
+    }
+
     const int lo_code = is_reversed ? bcode : wcode;
     const int hi_code = is_reversed ? wcode : bcode;
 

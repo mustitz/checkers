@@ -298,6 +298,7 @@ struct position_code_info
 {
     int has_tablebase;
     int is_reversed;
+    int wall, wsim, wmam, ball, bsim, bmam;
     char filename[16];
     uint64_t fr_consts[5];
 };
