@@ -157,7 +157,7 @@ void debug_position_code(void)
     }
 }
 
-int position_to_code(const struct position * const position)
+const struct position_code_info * get_position_info(const struct position * const position)
 {
     int all_0 = pop_count(position->bitboards[IDX_ALL_0]);
     int sim_0 = pop_count(position->bitboards[IDX_SIM_0]);
@@ -165,17 +165,17 @@ int position_to_code(const struct position * const position)
     int sim_1 = pop_count(position->bitboards[IDX_SIM_1]);
 
     if (all_0 <= 0 || all_0 > 12 || all_1 <= 0 || all_1 > 12) {
-        return -1;
+        return NULL;
     }
 
     int idx_0 = bitboard_stat_to_code(all_0, sim_0);
     int idx_1 = bitboard_stat_to_code(all_1, sim_1);
-    return idx_0 + SIDE_BITBOARD_CODE_COUNT * idx_1;
+    return &position_codes[idx_0][idx_1];
 }
 
 uint64_t position_to_index(
     const struct position * const position,
-    const int code)
+    const struct position_code_info * const info)
 {
     return 1;
 }
