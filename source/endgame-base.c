@@ -69,7 +69,8 @@ static void init_endgame_entry(
 
     struct position_code_info * restrict const info = &position_codes[wcode][bcode];
 
-    const int is_reversed = wcode > bcode;
+    const int is_reversed = wcode < bcode;
+
     info->is_reversed = is_reversed;
     if (!is_reversed) {
         info->wall = wall;
@@ -96,7 +97,7 @@ static void init_endgame_entry(
             static int error_count = 0;
             if (error_count++ == 0) {
                 fprintf(stderr, "sprintf error in %s:%d\n", __FILE__, __LINE__);
-                return;
+                exit(1);
             }
         }
         info->filename[status] = '\0';
@@ -108,7 +109,7 @@ static void init_endgame_entry(
             static int error_count = 0;
             if (error_count++ == 0) {
                 fprintf(stderr, "sprintf error in %s:%d\n", __FILE__, __LINE__);
-                return;
+                exit(1);
             }
         }
         filepath[status] = '\0';
@@ -134,7 +135,7 @@ void init_endgame_base(void)
         }
 
         for (int bsim = 0; bsim <= 12; ++bsim)
-        for (int bmam = 0; bmam <= 12 - bsim; ++bsim) {
+        for (int bmam = 0; bmam <= 12 - bsim; ++bmam) {
 
             if (bsim == 0 && bmam == 0) {
                 continue;
