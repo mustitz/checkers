@@ -300,7 +300,7 @@ struct position_code_info
     int is_reversed;
     int wall, wsim, wmam, ball, bsim, bmam;
     char filename[16];
-    uint64_t fr_consts[5];
+    uint64_t fr_offsets[6];
 };
 
 extern struct position_code_info position_codes[SIDE_BITBOARD_CODE_COUNT][SIDE_BITBOARD_CODE_COUNT];

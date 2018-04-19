@@ -51,6 +51,66 @@ static void init_choose(void)
     }
 }
 
+uint64_t safe_mul(const uint64_t a, const uint64_t b)
+{
+    if (a == CHOOSE_OVERFLOW) {
+        return CHOOSE_OVERFLOW;
+    }
+
+    if (b == CHOOSE_OVERFLOW) {
+        return CHOOSE_OVERFLOW;
+    }
+
+    if (a == 0) {
+        return 0;
+    }
+
+    const uint64_t result = a * b;
+    if (result / a != b) {
+        return CHOOSE_OVERFLOW;
+    }
+
+    return result;
+}
+
+
+
+static void init_position_info_offset(
+    struct position_code_info * restrict const info)
+{
+    const int wsim = info->wsim;
+    const int bsim = info->bsim;
+
+    uint64_t * restrict offsets = info->fr_offsets;
+    const uint64_t * const begin = offsets + 1;
+    const uint64_t * const end = offsets + 6;
+
+    *offsets++ = 0;
+    for (; offsets != end; ++offsets) {
+        const int wfsim = offsets - begin;
+        const int wosim = wsim - wfsim;
+        if (wosim < 0) {
+            offsets[0] = offsets[-1];
+            continue;
+        }
+
+        const uint64_t m1 = choose[4][wfsim];
+        const uint64_t m2 = choose[24][wosim];
+        const uint64_t m3 = safe_mul(m1, m2);
+        const uint64_t m4 = choose[28-wosim][bsim];
+        const uint64_t m5 = safe_mul(m3, m4);
+
+        if (m5 == CHOOSE_OVERFLOW) {
+            fprintf(stderr, "U64 multiplicatation oveflow: %lu * %lu * %lu.\n", m1, m2, m4);
+            exit(1);
+        }
+
+        offsets[0] = offsets[-1] + m5;
+    }
+}
+
+
+
 static void init_endgame_entry(
     char * restrict const filepath,
     const size_t filepath_len,
@@ -87,6 +147,8 @@ static void init_endgame_entry(
         info->bsim = wsim;
         info->bmam = wmam;
     }
+
+    init_position_info_offset(info);
 
     const int lo_code = is_reversed ? bcode : wcode;
     const int hi_code = is_reversed ? wcode : bcode;
