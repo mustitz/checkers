@@ -157,6 +157,7 @@ struct test_item tests[] = {
     { "sets", &test_sets },
     { "parser", &test_parser },
     { "choose", &test_choose },
+    { "fr_offsets", &test_fr_offsets },
     { NULL, NULL }
 };
 

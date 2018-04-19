@@ -287,4 +287,32 @@ static int test_choose()
     return 0;
 }
 
+static void check_offset(
+    const struct position_code_info * const info,
+    const int index,
+    const uint64_t value)
+{
+    const uint64_t result = info->fr_offsets[index];
+    if (result != value) {
+        test_fail("Wrong offset %lu, expected %lu for index %d in position info struct.\n", result, value, index);
+    }
+}
+
+static int test_fr_offsets()
+{
+    init_endgame_base();
+
+    const int wcode = calc_code_and_check(3, 2, "wcode");
+    const int bcode = calc_code_and_check(2, 1, "bcode");
+    const struct position_code_info * const info = &position_codes[wcode][bcode];
+
+    check_offset(info, 0, 0);
+    check_offset(info, 1, 7176);
+    check_offset(info, 2, 9768);
+    check_offset(info, 3, 9936);
+    check_offset(info, 4, 9936);
+    check_offset(info, 5, 9936);
+    return 0;
+}
+
 #endif
