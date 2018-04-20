@@ -423,6 +423,24 @@ static int test_fr_offsets()
     return 0;
 }
 
+static int test_index_deindex()
+{
+    init_choose();
+
+    static const int N = 4;
+    int indexes[N];
+    for (uint64_t index=0; index<5000; ++index) {
+        cdeindex(N, indexes, index);
+        uint64_t calculated = cindex(N, indexes);
+        if (index != calculated) {
+            test_fail("Wring index/deindex for %lu (%d, %d, %d, %d), calculated %lu.\n",
+                index, indexes[0], indexes[1], indexes[2], indexes[3], calculated);
+        }
+    }
+
+    return 0;
+}
+
 static int test_position_to_index()
 {
     static const struct position position = {
