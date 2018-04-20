@@ -252,11 +252,81 @@ const struct position_code_info * get_position_info(const struct position * cons
     return &position_codes[idx_0][idx_1];
 }
 
+static inline uint64_t cindex(const int len, const int * indexes)
+{
+    uint64_t result = 0;
+    for (int i=1; i<=len; ++i) {
+        result += choose[*indexes++][i];
+    }
+
+    return result;
+}
+
+static void calc_indexes(int * restrict indexes, bitboard_t bb, const bitboard_t used)
+{
+    while (bb != 0) {
+        const square_t sq = get_first_square(bb);
+        const bitboard_t sq_mask = bb & -bb;
+        const bitboard_t used_before_sq = sq_mask - 1;
+        int skip = pop_count(used_before_sq & used);
+        *indexes++ = sq - skip;
+        bb ^= sq_mask;
+    }
+}
+
 uint64_t position_to_index(
     const struct position * const position,
     const struct position_code_info * const info)
 {
-    return 1;
+    int indexes[12];
+
+    const int wdelta = info->is_reversed;
+    const int bdelta = !wdelta;
+
+    const bitboard_t wall_bb = position->bitboards[IDX_ALL + wdelta];
+    const bitboard_t ball_bb = position->bitboards[IDX_ALL + bdelta];
+    const bitboard_t wsim_bb = position->bitboards[IDX_SIM + wdelta];
+    const bitboard_t bsim_bb = position->bitboards[IDX_SIM + bdelta];
+    const bitboard_t wmam_bb = wall_bb ^ wsim_bb;
+    const bitboard_t bmam_bb = ball_bb ^ bsim_bb;
+
+    const bitboard_t wfsim_bb = wsim_bb & RANK_1;
+    const bitboard_t wosim_bb = wsim_bb & (BOARD ^ RANK_1);
+
+    const int wfsim = pop_count(wfsim_bb);
+    const int wosim = pop_count(wosim_bb);
+
+    calc_indexes(indexes, wfsim_bb, BOARD ^ RANK_1);
+    const uint64_t idx_wfsim = cindex(wfsim, indexes);
+
+    calc_indexes(indexes, wosim_bb, RANK_1 | RANK_8);
+    const uint64_t idx_wosim = cindex(wosim, indexes);
+
+    calc_indexes(indexes, bsim_bb, RANK_1 | wosim_bb);
+    const uint64_t idx_bsim = cindex(info->bsim, indexes);
+
+    calc_indexes(indexes, wmam_bb, bsim_bb | wsim_bb);
+    const uint64_t idx_wmam = cindex(info->wmam, indexes);
+
+    calc_indexes(indexes, bmam_bb, wall_bb | bsim_bb);
+    const uint64_t idx_bmam = cindex(info->bmam, indexes);
+
+    const uint64_t wfsim_total = choose[4][wfsim];
+    const uint64_t wosim_total = choose[24][wosim];
+
+    uint64_t sim_result = idx_bsim;
+    sim_result = sim_result * wosim_total + idx_wosim;
+    sim_result = sim_result * wfsim_total + idx_wfsim;
+    sim_result += info->fr_offsets[wfsim];
+
+    const int free_squares = 32 - info->wsim - info->bsim;
+    const uint64_t wmam_total = choose[free_squares][info->wmam];
+
+    uint64_t mam_result = idx_bmam;
+    mam_result = mam_result * wmam_total + idx_wmam;
+
+    const uint64_t result = sim_result + mam_result * info->fr_offsets[5];
+    return 2 * result + (position->active ^ wdelta);
 }
 
 
