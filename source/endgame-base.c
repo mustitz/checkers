@@ -385,4 +385,26 @@ static int test_fr_offsets()
     return 0;
 }
 
+static int test_position_to_index()
+{
+    static const struct position position = {
+        .active = WHITE,
+        .bitboards = {
+            [IDX_ALL_0] = MASK(G1) | MASK(B2) | MASK(G3),
+            [IDX_ALL_1] = MASK(A5) | MASK(E7),
+            [IDX_SIM_0] = MASK(G1) | MASK(B2),
+            [IDX_SIM_1] = MASK(A5)
+        }
+    };
+
+    init_endgame_base();
+    const struct position_code_info * const info = get_position_info(&position);
+    uint64_t index = position_to_index(&position, info);
+    if (index != 2778902) {
+        test_fail("Wrong position index, expected 2778902, returned %lu.\n", index);
+    }
+
+    return 0;
+}
+
 #endif
