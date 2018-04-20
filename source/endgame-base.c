@@ -26,7 +26,7 @@ static inline int calc_code_and_check(const int all, const int sim, const char *
 }
 
 static uint64_t choose[33][33];
-static const uint64_t CHOOSE_OVERFLOW = ~0ull;
+static const uint64_t U64_OVERFLOW = ~0ull;
 
 static void init_choose(void)
 {
@@ -47,18 +47,18 @@ static void init_choose(void)
         const uint64_t prev2 = data[-33];
         const uint64_t value = prev1 + prev2;
         const int is_overflow = value < prev1 || value < prev2;
-        *data++ = is_overflow ? CHOOSE_OVERFLOW : value;
+        *data++ = is_overflow ? U64_OVERFLOW : value;
     }
 }
 
 uint64_t safe_mul(const uint64_t a, const uint64_t b)
 {
-    if (a == CHOOSE_OVERFLOW) {
-        return CHOOSE_OVERFLOW;
+    if (a == U64_OVERFLOW) {
+        return U64_OVERFLOW;
     }
 
-    if (b == CHOOSE_OVERFLOW) {
-        return CHOOSE_OVERFLOW;
+    if (b == U64_OVERFLOW) {
+        return U64_OVERFLOW;
     }
 
     if (a == 0) {
@@ -67,7 +67,7 @@ uint64_t safe_mul(const uint64_t a, const uint64_t b)
 
     const uint64_t result = a * b;
     if (result / a != b) {
-        return CHOOSE_OVERFLOW;
+        return U64_OVERFLOW;
     }
 
     return result;
@@ -100,7 +100,7 @@ static void init_position_info_offset(
         const uint64_t m4 = choose[28-wosim][bsim];
         const uint64_t m5 = safe_mul(m3, m4);
 
-        if (m5 == CHOOSE_OVERFLOW) {
+        if (m5 == U64_OVERFLOW) {
             fprintf(stderr, "U64 multiplicatation oveflow: %lu * %lu * %lu.\n", m1, m2, m4);
             exit(1);
         }
