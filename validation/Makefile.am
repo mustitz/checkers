@@ -2,7 +2,13 @@ LOG_DRIVER = ./validation.sh
 
 check_PROGRAMS = insider
 
-insider_CFLAGS = -I${srcdir}/../include
+if DEBUG_MODE
+EXTRA_CFLAGS = -g3 -O0 -Wall -Werror
+else
+EXTRA_CFLAGS = -Ofast
+endif
+
+insider_CFLAGS = $(EXTRA_CFLAGS) -I${srcdir}/../include
 insider_SOURCES = insider.c
 
 IO_TESTS = \
@@ -39,7 +45,7 @@ IO_TESTS = \
 	031-debug-position-code.io
 
 
-	
+
 TESTS = run-insider $(IO_TESTS)
 
 EXTRA_DIST = $(IO_TESTS)
