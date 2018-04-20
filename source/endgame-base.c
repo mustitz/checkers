@@ -329,6 +329,44 @@ uint64_t position_to_index(
     return 2 * result + (position->active ^ wdelta);
 }
 
+void cdeindex(
+    int len,
+    int * const indexes,
+    uint64_t index)
+{
+    if (len == 0) {
+        return;
+    }
+
+    int * restrict ptr = indexes + len;
+    uint64_t dec = 0;
+
+    int c = len;
+    for (;; ++c) {
+        const uint64_t next_dec = choose[c][len];
+        if (next_dec > index) {
+            break;
+        }
+        dec = next_dec;
+    }
+
+    for (;;) {
+        *--ptr = --c;
+        if (ptr == indexes) {
+            return;
+        }
+
+        --len;
+        index -= dec;
+
+        for (;; --c) {
+            dec = choose[c-1][len];
+            if (dec <= index) {
+                break;
+            }
+        }
+    }
+}
 
 
 /*
