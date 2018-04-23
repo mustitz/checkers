@@ -711,4 +711,35 @@ static int test_index_to_position()
     return 0;
 }
 
+static void check_reverse(const bitboard_t a, const bitboard_t b)
+{
+    const bitboard_t c = reverse(a);
+    const bitboard_t d = reverse(b);
+
+    if (b != c) {
+        test_fail("Wrong reverse for bitboards 0x%08X (0x%08X) and 0x%08X (0x%08X)\n", a, c, b, d);
+    }
+
+    if (a != d) {
+        test_fail("Wrong reverse for bitboards 0x%08X (0x%08X) and 0x%08X (0x%08X)\n", b, d, a, c);
+    }
+}
+
+static int test_reverse()
+{
+    init_reverse_table();
+
+    check_reverse(BOARD, BOARD);
+    check_reverse(RANK_1, RANK_8);
+    check_reverse(RANK_2, RANK_7);
+    check_reverse(RANK_3, RANK_6);
+    check_reverse(RANK_4, RANK_5);
+    check_reverse(MASK(A1), MASK(H8));
+    check_reverse(MASK(E3), MASK(D6));
+    check_reverse(MASK(F4), MASK(C5));
+    check_reverse(MASK(A5) | MASK(E7), MASK(H4) | MASK(D2));
+
+    return 0;
+}
+
 #endif
