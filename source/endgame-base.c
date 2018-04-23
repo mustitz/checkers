@@ -368,6 +368,115 @@ void cdeindex(
     }
 }
 
+/* TODO: Very slow implementation, optimization is needed */
+static bitboard_t indexes_to_bitboard(
+    const int len,
+    const int * indexes,
+    const bitboard_t used)
+{
+    if (len == 0) {
+        return 0;
+    }
+
+    const void * const end = indexes + len;
+
+    bitboard_t result = 0;
+    int index = 0;
+    for (int i=0; i<32; ++i) {
+        bitboard_t mask = MASK(i);
+        if (used & mask) {
+            continue;
+        }
+        if (index++ != *indexes) {
+            continue;
+        }
+
+        result |= MASK(i);
+
+        if (++indexes == end) {
+            break;
+        }
+    }
+
+    return result;
+}
+
+int index_to_position(
+    struct position * restrict const position,
+    const struct position_code_info * const info,
+    uint64_t index)
+{
+    if (index == U64_OVERFLOW) {
+        return -1;
+    }
+
+    position->active = (index % 2) ^ info->is_reversed;
+    index /= 2;
+
+    uint64_t sim_index = index % info->fr_offsets[5];
+    uint64_t mam_index = index / info->fr_offsets[5];
+
+    const int wfsim = 0
+        + (sim_index >= info->fr_offsets[1])
+        + (sim_index >= info->fr_offsets[2])
+        + (sim_index >= info->fr_offsets[3])
+        + (sim_index >= info->fr_offsets[4])
+    ;
+
+    const int wosim = info->wsim - wfsim;
+    sim_index -= info->fr_offsets[wfsim];
+
+    const uint64_t wfsim_total = choose[4][wfsim];
+    const uint64_t wosim_total = choose[24][wosim];
+
+    const uint64_t idx_wfsim = sim_index % wfsim_total;
+    sim_index /= wfsim_total;
+
+    const uint64_t idx_wosim = sim_index % wosim_total;
+    const uint64_t idx_bsim = sim_index / wosim_total;
+
+    const int free_squares = 32 - info->wsim - info->bsim;
+    const uint64_t wmam_total = choose[free_squares][info->wmam];
+
+    const uint64_t idx_wmam = mam_index % wmam_total;
+    const uint64_t idx_bmam = mam_index / wmam_total;
+
+    int wfsim_indexes[wfsim];
+    int wosim_indexes[wosim];
+    int bsim_indexes[info->bsim];
+    int wmam_indexes[info->wmam];
+    int bmam_indexes[info->bmam];
+
+    cdeindex(wfsim, wfsim_indexes, idx_wfsim);
+    cdeindex(wosim, wosim_indexes, idx_wosim);
+    cdeindex(info->bsim, bsim_indexes, idx_bsim);
+    cdeindex(info->wmam, wmam_indexes, idx_wmam);
+    cdeindex(info->bmam, bmam_indexes, idx_bmam);
+
+    const bitboard_t wfsim_bb = indexes_to_bitboard(wfsim, wfsim_indexes, BOARD ^ RANK_1);
+    const bitboard_t wosim_bb = indexes_to_bitboard(wosim, wosim_indexes, RANK_1 | RANK_7);
+    const bitboard_t bsim_bb = indexes_to_bitboard(info->bsim, bsim_indexes, wosim_bb | RANK_1);
+
+    const bitboard_t sim_bb = wfsim_bb | wosim_bb | bsim_bb;
+    const bitboard_t wmam_bb = indexes_to_bitboard(info->wmam, wmam_indexes, sim_bb);
+    const bitboard_t bmam_bb = indexes_to_bitboard(info->bmam, bmam_indexes, sim_bb | wmam_bb);
+
+    const int wdelta = info->is_reversed;
+    const int bdelta = !wdelta;
+
+    const int iwall = IDX_ALL + wdelta;
+    const int iball = IDX_ALL + bdelta;
+    const int iwsim = IDX_SIM + wdelta;
+    const int ibsim = IDX_SIM + bdelta;
+
+    position->bitboards[iwsim] = wfsim_bb | wosim_bb;
+    position->bitboards[ibsim] = bsim_bb;
+    position->bitboards[iwall] = wfsim_bb | wosim_bb | wmam_bb;
+    position->bitboards[iball] = bsim_bb | bmam_bb;
+    return 0;
+}
+
+
 
 /*
  * Tests
