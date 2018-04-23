@@ -160,6 +160,7 @@ struct test_item tests[] = {
     { "fr_offsets", &test_fr_offsets },
     { "position_to_index", &test_position_to_index },
     { "index_deindex", &test_index_deindex },
+    { "index_to_position", &test_index_to_position },
     { NULL, NULL }
 };
 

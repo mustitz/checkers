@@ -591,4 +591,47 @@ static int test_position_to_index()
     return 0;
 }
 
+static int test_index_to_position()
+{
+    init_endgame_base();
+
+    const int qtest_positions = sizeof(position_index_data) / sizeof(position_index_data[0]);
+    const struct position_with_index * const end = position_index_data + qtest_positions;
+    const struct position_with_index * ptr = position_index_data;
+
+    for (; ptr != end; ++ptr) {
+        const struct position * const position = &ptr->position;
+        const struct position_code_info * const info = get_position_info(position);
+
+        struct position calculated;
+        const int status = index_to_position(&calculated, info, ptr->index);
+
+        if (status != 0) {
+            test_fail("Wrong status %d.\n", status);
+        }
+
+        if (memcmp(&calculated, position, sizeof(struct position)) != 0) {
+            fprintf(stderr, "Position mismatch!\n");
+            if (calculated.active != position->active) {
+                fprintf(stderr, "Active calculated %d, expected %d.\n", calculated.active, position->active);
+            }
+            if (calculated.bitboards[IDX_ALL_0] != position->bitboards[IDX_ALL_0]) {
+                fprintf(stderr, "WALL calculated 0x%08X, expected 0x%08X.\n", calculated.bitboards[IDX_ALL_0], position->bitboards[IDX_ALL_0]);
+            }
+            if (calculated.bitboards[IDX_ALL_1] != position->bitboards[IDX_ALL_1]) {
+                fprintf(stderr, "BALL calculated 0x%08X, expected 0x%08X.\n", calculated.bitboards[IDX_ALL_1], position->bitboards[IDX_ALL_1]);
+            }
+            if (calculated.bitboards[IDX_SIM_0] != position->bitboards[IDX_SIM_0]) {
+                fprintf(stderr, "WSIM calculated 0x%08X, expected 0x%08X.\n", calculated.bitboards[IDX_SIM_0], position->bitboards[IDX_SIM_0]);
+            }
+            if (calculated.bitboards[IDX_SIM_1] != position->bitboards[IDX_SIM_1]) {
+                fprintf(stderr, "BSIM calculated 0x%08X, expected 0x%08X.\n", calculated.bitboards[IDX_SIM_1], position->bitboards[IDX_SIM_1]);
+            }
+            test_fail("\n");
+        }
+    }
+
+    return 0;
+}
+
 #endif
