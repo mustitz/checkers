@@ -73,6 +73,45 @@ uint64_t safe_mul(const uint64_t a, const uint64_t b)
     return result;
 }
 
+static const int reverse_map[32] = {
+    [A1] = H8, [B2] = G7, [C3] = F6, [D4] = E5, [E5] = D4, [F6] = C3, [G7] = B2, [H8] = A1,
+    [C1] = F8, [D2] = E7, [E3] = D6, [F4] = C5, [G5] = B4, [H6] = A3,
+    [A3] = H6, [B4] = G5, [C5] = F4, [D6] = E3, [E7] = D2, [F8] = C1,
+    [E1] = D8, [F2] = C7, [G3] = B6, [H4] = A5,
+    [A5] = H4, [B6] = G3, [C7] = F2, [D8] = E1,
+    [G1] = B8, [H2] = A7,
+    [A7] = H2, [B8] = G1
+};
+
+static bitboard_t reverse_table[4][256];
+
+void init_reverse_table(void)
+{
+    for (int byte_num = 0; byte_num < 4; ++byte_num)
+    for (int byte_val = 0; byte_val < 256; ++byte_val) {
+        bitboard_t result = 0;
+        for (int i=0; i<8; ++i) {
+            const int is_set = (MASK(i) & byte_val) != 0;
+            if (!is_set) {
+                continue;
+            }
+            const int sq = 8*byte_num + i;
+            result |= MASK(reverse_map[sq]);
+        }
+        reverse_table[byte_num][byte_val] = result;
+    }
+}
+
+static inline bitboard_t reverse(const bitboard_t bb)
+{
+    const unsigned char * const indexes =(const unsigned char *) &bb;
+    return 0
+        | reverse_table[0][indexes[0]]
+        | reverse_table[1][indexes[1]]
+        | reverse_table[2][indexes[2]]
+        | reverse_table[3][indexes[3]]
+    ;
+}
 
 
 static void init_position_info_offset(

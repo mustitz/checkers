@@ -488,6 +488,7 @@ int main()
     srand(time(0));
 
     init_endgame_base();
+    init_reverse_table();
 
     char * line = 0;
     size_t len = 0;

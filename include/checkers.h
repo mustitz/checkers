@@ -306,6 +306,7 @@ struct position_code_info
 extern struct position_code_info position_codes[SIDE_BITBOARD_CODE_COUNT][SIDE_BITBOARD_CODE_COUNT];
 
 void init_endgame_base(void);
+void init_reverse_table(void);
 
 static inline int bitboard_stat_to_code(const int all_0, const int sim_0)
 {
