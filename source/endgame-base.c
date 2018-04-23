@@ -553,6 +553,7 @@ static int test_index_deindex()
 struct position_with_index
 {
     struct position position;
+    struct position rposition;
     uint64_t index;
 };
 
@@ -567,9 +568,30 @@ struct position_with_index position_index_data[] = {
                 [IDX_SIM_1] = MASK(A5)
             }
         },
+        .rposition = {
+            .active = BLACK,
+            .bitboards = {
+                [IDX_ALL_0] = MASK(H4) | MASK(D2),
+                [IDX_ALL_1] = MASK(B8) | MASK(G7) | MASK(B6),
+                [IDX_SIM_0] = MASK(H4),
+                [IDX_SIM_1] = MASK(B8) | MASK(G7),
+            },
+        },
         .index = 2778902
     }
 };
+
+static void test_one_position_to_index(
+    const char * const title,
+    const struct position * const position,
+    const uint64_t index)
+{
+    const struct position_code_info * const info = get_position_info(position);
+    const uint64_t calculated = position_to_index(position, info);
+    if (calculated != index) {
+        test_fail("Wrong %s position index, expected %lu, calculated %lu.\n", title, index, calculated);
+    }
+}
 
 static int test_position_to_index()
 {
@@ -580,15 +602,58 @@ static int test_position_to_index()
     const struct position_with_index * ptr = position_index_data;
 
     for (; ptr != end; ++ptr) {
-        const struct position * const position = &ptr->position;
-        const struct position_code_info * const info = get_position_info(position);
-        uint64_t index = position_to_index(&ptr->position, info);
-        if (index != ptr->index) {
-            test_fail("Wrong position index, expected %lu, returned %lu.\n", ptr->index, index);
-        }
+        test_one_position_to_index("normal", &ptr->position, ptr->index);
+        // test_one_position_to_index("reversed", &ptr->rposition, ptr->index);
     }
 
     return 0;
+}
+
+static void diff_positions(const struct position * const a, const struct position * const b)
+{
+    if (a->active != b->active) {
+        fprintf(stderr, "Active a->%d, expected %d.\n", a->active, b->active);
+    }
+    if (a->bitboards[IDX_ALL_0] != b->bitboards[IDX_ALL_0]) {
+        fprintf(stderr, "WALL a->0x%08X, expected 0x%08X.\n", a->bitboards[IDX_ALL_0], b->bitboards[IDX_ALL_0]);
+    }
+    if (a->bitboards[IDX_ALL_1] != b->bitboards[IDX_ALL_1]) {
+        fprintf(stderr, "BALL a->0x%08X, expected 0x%08X.\n", a->bitboards[IDX_ALL_1], b->bitboards[IDX_ALL_1]);
+    }
+    if (a->bitboards[IDX_SIM_0] != b->bitboards[IDX_SIM_0]) {
+        fprintf(stderr, "WSIM a->0x%08X, expected 0x%08X.\n", a->bitboards[IDX_SIM_0], b->bitboards[IDX_SIM_0]);
+    }
+    if (a->bitboards[IDX_SIM_1] != b->bitboards[IDX_SIM_1]) {
+        fprintf(stderr, "BSIM a->0x%08X, expected 0x%08X.\n", a->bitboards[IDX_SIM_1], b->bitboards[IDX_SIM_1]);
+    }
+}
+
+static inline int cmp_positions(const struct position * const a, const struct position * const b)
+{
+    if (memcmp(a, b, sizeof(struct position)) == 0) {
+        return 0;
+    }
+
+    diff_positions(a, b);
+    return 1;
+}
+
+static void test_one_index_to_position(
+    const char * const title,
+    const struct position * const position,
+    const uint64_t index)
+{
+    struct position calculated;
+    const struct position_code_info * const info = get_position_info(position);
+    const int status = index_to_position(&calculated, info, index);
+
+    if (status != 0) {
+        test_fail("Wrong status %d for %s position.\n", status, title);
+    }
+
+    if (cmp_positions(&calculated, position) != 0) {
+        test_fail("Position mismatch!\n");
+    }
 }
 
 static int test_index_to_position()
@@ -600,35 +665,8 @@ static int test_index_to_position()
     const struct position_with_index * ptr = position_index_data;
 
     for (; ptr != end; ++ptr) {
-        const struct position * const position = &ptr->position;
-        const struct position_code_info * const info = get_position_info(position);
-
-        struct position calculated;
-        const int status = index_to_position(&calculated, info, ptr->index);
-
-        if (status != 0) {
-            test_fail("Wrong status %d.\n", status);
-        }
-
-        if (memcmp(&calculated, position, sizeof(struct position)) != 0) {
-            fprintf(stderr, "Position mismatch!\n");
-            if (calculated.active != position->active) {
-                fprintf(stderr, "Active calculated %d, expected %d.\n", calculated.active, position->active);
-            }
-            if (calculated.bitboards[IDX_ALL_0] != position->bitboards[IDX_ALL_0]) {
-                fprintf(stderr, "WALL calculated 0x%08X, expected 0x%08X.\n", calculated.bitboards[IDX_ALL_0], position->bitboards[IDX_ALL_0]);
-            }
-            if (calculated.bitboards[IDX_ALL_1] != position->bitboards[IDX_ALL_1]) {
-                fprintf(stderr, "BALL calculated 0x%08X, expected 0x%08X.\n", calculated.bitboards[IDX_ALL_1], position->bitboards[IDX_ALL_1]);
-            }
-            if (calculated.bitboards[IDX_SIM_0] != position->bitboards[IDX_SIM_0]) {
-                fprintf(stderr, "WSIM calculated 0x%08X, expected 0x%08X.\n", calculated.bitboards[IDX_SIM_0], position->bitboards[IDX_SIM_0]);
-            }
-            if (calculated.bitboards[IDX_SIM_1] != position->bitboards[IDX_SIM_1]) {
-                fprintf(stderr, "BSIM calculated 0x%08X, expected 0x%08X.\n", calculated.bitboards[IDX_SIM_1], position->bitboards[IDX_SIM_1]);
-            }
-            test_fail("\n");
-        }
+        test_one_index_to_position("normal", &ptr->position, ptr->index);
+        // test_one_index_to_position("reversed", &ptr->rposition, ptr->index);
     }
 
     return 0;
