@@ -709,13 +709,14 @@ static void test_one_index_to_position(
     }
 
     if (cmp_positions(&calculated, position) != 0) {
-        test_fail("Position mismatch!\n");
+        test_fail("Position (%s) mismatch!\n", title);
     }
 }
 
 static int test_index_to_position()
 {
     init_endgame_base();
+    init_reverse_table();
 
     const int qtest_positions = sizeof(position_index_data) / sizeof(position_index_data[0]);
     const struct position_with_index * const end = position_index_data + qtest_positions;
@@ -723,7 +724,7 @@ static int test_index_to_position()
 
     for (; ptr != end; ++ptr) {
         test_one_index_to_position("normal", &ptr->position, ptr->index);
-        // test_one_index_to_position("reversed", &ptr->rposition, ptr->index);
+        test_one_index_to_position("reversed", &ptr->rposition, ptr->index);
     }
 
     return 0;
