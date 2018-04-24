@@ -459,7 +459,8 @@ int index_to_position(
         return -1;
     }
 
-    position->active = (index % 2) ^ info->is_reversed;
+    const int is_reversed = info->is_reversed;
+    const int active = (index % 2);
     index /= 2;
 
     uint64_t sim_index = index % info->fr_offsets[5];
@@ -510,18 +511,24 @@ int index_to_position(
     const bitboard_t wmam_bb = indexes_to_bitboard(info->wmam, wmam_indexes, sim_bb);
     const bitboard_t bmam_bb = indexes_to_bitboard(info->bmam, bmam_indexes, sim_bb | wmam_bb);
 
-    const int wdelta = info->is_reversed;
-    const int bdelta = !wdelta;
+    const bitboard_t wsim_bb = wfsim_bb | wosim_bb;
+    const bitboard_t wall_bb = wsim_bb | wmam_bb;
+    const bitboard_t ball_bb = bsim_bb | bmam_bb;
 
-    const int iwall = IDX_ALL + wdelta;
-    const int iball = IDX_ALL + bdelta;
-    const int iwsim = IDX_SIM + wdelta;
-    const int ibsim = IDX_SIM + bdelta;
+    if (!is_reversed) {
+        position->active = active;
+        position->bitboards[IDX_ALL_0] = wall_bb;
+        position->bitboards[IDX_ALL_1] = ball_bb;
+        position->bitboards[IDX_SIM_0] = wsim_bb;
+        position->bitboards[IDX_SIM_1] = bsim_bb;
+    } else {
+        position->active = !active;
+        position->bitboards[IDX_ALL_0] = reverse(ball_bb);
+        position->bitboards[IDX_ALL_1] = reverse(wall_bb);
+        position->bitboards[IDX_SIM_0] = reverse(bsim_bb);
+        position->bitboards[IDX_SIM_1] = reverse(wsim_bb);
+    }
 
-    position->bitboards[iwsim] = wfsim_bb | wosim_bb;
-    position->bitboards[ibsim] = bsim_bb;
-    position->bitboards[iwall] = wfsim_bb | wosim_bb | wmam_bb;
-    position->bitboards[iball] = bsim_bb | bmam_bb;
     return 0;
 }
 
