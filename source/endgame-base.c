@@ -645,6 +645,7 @@ static void test_one_position_to_index(
 static int test_position_to_index()
 {
     init_endgame_base();
+    init_reverse_table();
 
     const int qtest_positions = sizeof(position_index_data) / sizeof(position_index_data[0]);
     const struct position_with_index * const end = position_index_data + qtest_positions;
@@ -652,7 +653,7 @@ static int test_position_to_index()
 
     for (; ptr != end; ++ptr) {
         test_one_position_to_index("normal", &ptr->position, ptr->index);
-        // test_one_position_to_index("reversed", &ptr->rposition, ptr->index);
+        test_one_position_to_index("reversed", &ptr->rposition, ptr->index);
     }
 
     return 0;
