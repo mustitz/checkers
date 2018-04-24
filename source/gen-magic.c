@@ -13,6 +13,7 @@ struct tables
     struct mam_take_magic mam_take_magic_1[32][256];
     struct mam_take_magic mam_take_magic_7[32][256];
     uint64_t choose[33][33];
+    bitboard_t reverse_table[4][256];
 };
 
 struct tables tables;
@@ -61,6 +62,7 @@ static void init_index_to_square();
 static void init_strings();
 static void init_magic();
 static void init_choose();
+static void init_reverse_table(void);
 static void print_file();
 
 int main()
@@ -73,6 +75,7 @@ int main()
     init_strings();
     init_magic();
     init_choose();
+    init_reverse_table();
     print_file();
     return 0;
 }
@@ -456,6 +459,35 @@ static void init_choose(void)
 
 
 
+static const int reverse_map[32] = {
+    [A1] = H8, [B2] = G7, [C3] = F6, [D4] = E5, [E5] = D4, [F6] = C3, [G7] = B2, [H8] = A1,
+    [C1] = F8, [D2] = E7, [E3] = D6, [F4] = C5, [G5] = B4, [H6] = A3,
+    [A3] = H6, [B4] = G5, [C5] = F4, [D6] = E3, [E7] = D2, [F8] = C1,
+    [E1] = D8, [F2] = C7, [G3] = B6, [H4] = A5,
+    [A5] = H4, [B6] = G3, [C7] = F2, [D8] = E1,
+    [G1] = B8, [H2] = A7,
+    [A7] = H2, [B8] = G1
+};
+
+void init_reverse_table(void)
+{
+    for (int byte_num = 0; byte_num < 4; ++byte_num)
+    for (int byte_val = 0; byte_val < 256; ++byte_val) {
+        bitboard_t result = 0;
+        for (int i=0; i<8; ++i) {
+            const int is_set = (MASK(i) & byte_val) != 0;
+            if (!is_set) {
+                continue;
+            }
+            const int sq = 8*byte_num + i;
+            result |= MASK(reverse_map[sq]);
+        }
+        tables.reverse_table[byte_num][byte_val] = result;
+    }
+}
+
+
+
 static void print_file()
 {
     printf("#include \"checkers.h\"\n\n");
@@ -589,6 +621,24 @@ static void print_file()
             printf(" %*lu%s", 10, tables.choose[i][j], (j != 32 ? "," : ""));
         }
         printf(" }%s\n", (i != 32 ? "," : ""));
+    }
+    printf("};\n\n");
+
+
+    printf("const bitboard_t reverse_table[4][256] = {\n");
+    for (int i=0; i<4; ++i) {
+        printf("    {\n");
+        for (int j=0; j<256; ++j) {
+            if (j % 8 == 0) {
+                printf("        ");
+            }
+            printf("0x%08X%s", tables.reverse_table[i][j], (j != 255 ? "," : ""));
+
+            if ((j % 8) == 7) {
+                printf("\n");
+            }
+        }
+        printf("    }%s\n", (i != 3 ? "," : ""));
     }
     printf("};\n");
 }
