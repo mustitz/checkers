@@ -114,11 +114,13 @@ static inline bitboard_t reverse(const bitboard_t bb)
 }
 
 
-static void init_position_info_offset(
+static uint64_t init_position_info_offset(
     struct position_code_info * restrict const info)
 {
     const int wsim = info->wsim;
     const int bsim = info->bsim;
+    const int wmam = info->wmam;
+    const int bmam = info->bmam;
 
     uint64_t * restrict offsets = info->fr_offsets;
     const uint64_t * const begin = offsets + 1;
@@ -140,12 +142,26 @@ static void init_position_info_offset(
         const uint64_t m5 = safe_mul(m3, m4);
 
         if (m5 == U64_OVERFLOW) {
-            fprintf(stderr, "U64 multiplicatation oveflow: %lu * %lu * %lu.\n", m1, m2, m4);
+            fprintf(stderr, "wsim %d, bsim %d, wmam %d, bmam %d:\n", wsim, bsim, wmam, bmam);
+            fprintf(stderr, "  U64 multiplicatation oveflow (sim): %lu * %lu * %lu.\n", m1, m2, m4);
             exit(1);
         }
 
         offsets[0] = offsets[-1] + m5;
     }
+
+    const uint64_t qsim = offsets[-1];
+    const uint64_t qwmam = choose[32-wsim-bsim][wmam];
+    const uint64_t qbmam = choose[32-wsim-bsim-wmam][bmam];
+
+    const uint64_t m1 = safe_mul(qsim, qwmam);
+    const uint64_t m2 = safe_mul(m1, qbmam);
+    if (m2 == U64_OVERFLOW) {
+        fprintf(stderr, "wsim %d, bsim %d, wmam %d, bmam %d:\n", wsim, bsim, wmam, bmam);
+        fprintf(stderr, "  U64 multiplicatation oveflow (total): %lu * %lu * %lu.\n", qsim, qwmam, qbmam);
+    }
+
+    return m2;
 }
 
 
@@ -187,7 +203,7 @@ static void init_endgame_entry(
         info->bmam = wmam;
     }
 
-    init_position_info_offset(info);
+    info->total = init_position_info_offset(info);
 
     const int lo_code = is_reversed ? bcode : wcode;
     const int hi_code = is_reversed ? wcode : bcode;

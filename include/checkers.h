@@ -301,6 +301,7 @@ struct position_code_info
     int wall, wsim, wmam, ball, bsim, bmam;
     char filename[16];
     uint64_t fr_offsets[6];
+    uint64_t total;
 };
 
 extern struct position_code_info position_codes[SIDE_BITBOARD_CODE_COUNT][SIDE_BITBOARD_CODE_COUNT];
