@@ -866,4 +866,39 @@ static int test_code_5()
 {
     return test_code_N(5);
 }
+
+static const int expected_pos_codes[13][13] = {
+    { -1,   1,   4,   8,  13,  19,  26,  34,  43,  53,  64,  76,  89 },
+    {  0,   3,   7,  12,  18,  25,  33,  42,  52,  63,  75,  88,  -1 },
+    {  2,   6,  11,  17,  24,  32,  41,  51,  62,  74,  87,  -1,  -1 },
+    {  5,  10,  16,  23,  31,  40,  50,  61,  73,  86,  -1,  -1,  -1 },
+    {  9,  15,  22,  30,  39,  49,  60,  72,  85,  -1,  -1,  -1,  -1 },
+    { 14,  21,  29,  38,  48,  59,  71,  84,  -1,  -1,  -1,  -1,  -1 },
+    { 20,  28,  37,  47,  58,  70,  83,  -1,  -1,  -1,  -1,  -1,  -1 },
+    { 27,  36,  46,  57,  69,  82,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
+    { 35,  45,  56,  68,  81,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
+    { 44,  55,  67,  80,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
+    { 54,  66,  79,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
+    { 65,  78,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
+    { 77,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 }
+};
+
+static int test_position_code()
+{
+    for (int sim = 0; sim < 13; ++sim)
+    for (int mam = 0; mam < 13; ++mam) {
+        const int expected = expected_pos_codes[sim][mam];
+        if (expected == -1) {
+            continue;
+        }
+        const int all = sim + mam;
+        const int code = bitboard_stat_to_code(all, sim);
+        if (code != expected) {
+            test_fail("bitboard_stat_to_code(%d, %d) fails: returned value %d, expected %d.", all, sim, code, expected);
+        }
+    }
+
+    return 0;
+}
+
 #endif

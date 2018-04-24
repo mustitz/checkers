@@ -169,6 +169,7 @@ struct test_item tests[] = {
     { "code_3", &test_code_3 },
     { "code_4", &test_code_4 },
     { "code_5", &test_code_5 },
+    { "position_code", &test_position_code },
     { NULL, NULL }
 };
 
