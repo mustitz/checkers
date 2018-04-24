@@ -318,14 +318,24 @@ uint64_t position_to_index(
     const struct position_code_info * const info)
 {
     int indexes[12];
+    bitboard_t bb_storage[4] ;
 
-    const int wdelta = info->is_reversed;
-    const int bdelta = !wdelta;
+    const int is_reversed = info->is_reversed;
+    const int active = is_reversed ^ position->active;
 
-    const bitboard_t wall_bb = position->bitboards[IDX_ALL + wdelta];
-    const bitboard_t ball_bb = position->bitboards[IDX_ALL + bdelta];
-    const bitboard_t wsim_bb = position->bitboards[IDX_SIM + wdelta];
-    const bitboard_t bsim_bb = position->bitboards[IDX_SIM + bdelta];
+    if (is_reversed) {
+        bb_storage[0] = reverse(position->bitboards[IDX_ALL_1]);
+        bb_storage[1] = reverse(position->bitboards[IDX_ALL_0]);
+        bb_storage[2] = reverse(position->bitboards[IDX_SIM_1]);
+        bb_storage[3] = reverse(position->bitboards[IDX_SIM_0]);
+    }
+
+    const bitboard_t * const bbs = is_reversed ? bb_storage : position->bitboards;
+
+    const bitboard_t wall_bb = bbs[IDX_ALL_0];
+    const bitboard_t ball_bb = bbs[IDX_ALL_1];
+    const bitboard_t wsim_bb = bbs[IDX_SIM_0];
+    const bitboard_t bsim_bb = bbs[IDX_SIM_1];
     const bitboard_t wmam_bb = wall_bb ^ wsim_bb;
     const bitboard_t bmam_bb = ball_bb ^ bsim_bb;
 
@@ -365,7 +375,7 @@ uint64_t position_to_index(
     mam_result = mam_result * wmam_total + idx_wmam;
 
     const uint64_t result = sim_result + mam_result * info->fr_offsets[5];
-    return 2 * result + (position->active ^ wdelta);
+    return 2 * result + active;
 }
 
 void cdeindex(
