@@ -471,7 +471,7 @@ int index_to_position(
     const struct position_code_info * const info,
     uint64_t index)
 {
-    if (index == U64_OVERFLOW) {
+    if (index >= info->total) {
         return -1;
     }
 
@@ -627,6 +627,7 @@ struct position_with_index
     struct position position;
     struct position rposition;
     uint64_t index;
+    uint64_t total;
 };
 
 struct position_with_index position_index_data[] = {
@@ -649,7 +650,8 @@ struct position_with_index position_index_data[] = {
                 [IDX_SIM_1] = MASK(B8) | MASK(G7),
             },
         },
-        .index = 2778902
+        .index = 2778902,
+        .total = 8068032
     }
 };
 
@@ -773,6 +775,24 @@ static int test_reverse()
     check_reverse(MASK(E3), MASK(D6));
     check_reverse(MASK(F4), MASK(C5));
     check_reverse(MASK(A5) | MASK(E7), MASK(H4) | MASK(D2));
+
+    return 0;
+}
+
+static int test_position_info_total()
+{
+    init_endgame_base();
+
+    const int qtest_positions = sizeof(position_index_data) / sizeof(position_index_data[0]);
+    const struct position_with_index * const end = position_index_data + qtest_positions;
+    const struct position_with_index * ptr = position_index_data;
+
+    for (; ptr != end; ++ptr) {
+        const struct position_code_info * const info = get_position_info(&ptr->position);
+        if (info->total != ptr->total) {
+            test_fail("Total mismatch, table %lu, expected %lu.\n", info->total, ptr->total);
+        }
+    }
 
     return 0;
 }

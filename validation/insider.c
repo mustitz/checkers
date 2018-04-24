@@ -162,6 +162,7 @@ struct test_item tests[] = {
     { "index_deindex", &test_index_deindex },
     { "index_to_position", &test_index_to_position },
     { "reverse", &test_reverse },
+    { "position_info_total", &test_position_info_total },
     { NULL, NULL }
 };
 
