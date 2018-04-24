@@ -340,7 +340,7 @@ static int test_try_int(
     return 0;
 }
 
-static int test_parser()
+static int test_parser(void)
 {
     test_skip_spaces("   123", '1');
     test_skip_spaces(" \t \n\r 123", '1');

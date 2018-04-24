@@ -11,14 +11,14 @@
 
 static unsigned long int next = 1;
 
-static int random10()
+static int random10(void)
 {
   next = next * 1103515245 + 12345;
   unsigned int result = (next/65536) % 10;
   return result;
 }
 
-static void randomize()
+static void randomize(void)
 {
    next = time(NULL);
 }

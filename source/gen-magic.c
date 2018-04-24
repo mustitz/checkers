@@ -23,13 +23,13 @@ struct tables tables;
 
 int permutations[1*2*3*4*5*6*7*8][8];
 
-void save_permutation(const int * values, int n)
+static void save_permutation(const int * values, int n)
 {
     static size_t counter = 0;
     memcpy(permutations[counter++], values, 8*sizeof(int));
 }
 
-void recurcive_gen_permutations(int * restrict base, int base_n, const int * variable, int variable_n)
+static void recurcive_gen_permutations(int * restrict base, int base_n, const int * variable, int variable_n)
 {
     if (variable_n == 0) {
         return save_permutation(base, base_n);
@@ -50,7 +50,7 @@ void recurcive_gen_permutations(int * restrict base, int base_n, const int * var
     }
 }
 
-void gen_permutations(const int * digits, int n)
+static void gen_permutations(const int * digits, int n)
 {
     int base[n];
     recurcive_gen_permutations(base, 0, digits, n);
@@ -58,11 +58,11 @@ void gen_permutations(const int * digits, int n)
 
 
 
-static void init_square_to_index();
-static void init_index_to_square();
-static void init_strings();
-static void init_magic();
-static void init_choose();
+static void init_square_to_index(void);
+static void init_index_to_square(void);
+static void init_strings(void);
+static void init_magic(void);
+static void init_choose(void);
 static void init_reverse_table(void);
 static void init_position_code_infos(void);
 static void print_file();
@@ -83,7 +83,7 @@ int main()
     return 0;
 }
 
-static void init_square_to_index()
+static void init_square_to_index(void)
 {
     tables.square_to_index[A1] = 000;
     tables.square_to_index[A3] = 020;
@@ -122,7 +122,7 @@ static void init_square_to_index()
     tables.square_to_index[H8] = 077;
 }
 
-static void init_index_to_square()
+static void init_index_to_square(void)
 {
     for (int i=0; i<64; ++i) {
         tables.index_to_square[i] = I9;
@@ -133,7 +133,7 @@ static void init_index_to_square()
     }
 }
 
-static void init_strings()
+static void init_strings(void)
 {
     for (int i=0; i<32; ++i) {
         int index = tables.square_to_index[i];
@@ -150,7 +150,7 @@ static void init_strings()
 static void handle_way_1(int n, const int * squares);
 static void handle_way_7(int n, const int * squares);
 
-static void init_magic()
+static void init_magic(void)
 {
     int a1a1[] = { A1 };
     int c1a3[] = { C1, B2, A3 };
@@ -472,7 +472,7 @@ static const int reverse_map[32] = {
     [A7] = H2, [B8] = G1
 };
 
-void init_reverse_table(void)
+static void init_reverse_table(void)
 {
     for (int byte_num = 0; byte_num < 4; ++byte_num)
     for (int byte_val = 0; byte_val < 256; ++byte_val) {
@@ -594,7 +594,7 @@ static void init_position_code_info_entry(
     info->filename[status] = '\0';
 }
 
-void init_position_code_infos(void)
+static void init_position_code_infos(void)
 {
     for (int wsim = 0; wsim <= 12; ++wsim)
     for (int wmam = 0; wmam <= 12 - wsim; ++wmam) {
@@ -617,7 +617,7 @@ void init_position_code_infos(void)
 
 
 
-static void print_file()
+static void print_file(void)
 {
     printf("#include \"checkers.h\"\n\n");
 

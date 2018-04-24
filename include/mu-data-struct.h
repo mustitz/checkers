@@ -16,7 +16,7 @@
 extern const char * test_name;
 void vpanic(const char * fmt, va_list args);
 void panic(const char * fmt, ...) __attribute__ ((format (printf, 1, 2)));
-void fail();
+void fail(void);
 void test_fail(const char * fmt, ...) __attribute__ ((format (printf, 1, 2)));
 
 

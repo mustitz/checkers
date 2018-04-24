@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int test_empty()
+int test_empty(void)
 {
     return 0;
 }
@@ -76,7 +76,7 @@ int test_diag(int delta, const square_t * squares)
     }
 }
 
-int test_bitboard()
+int test_bitboard(void)
 {
     bitboard_t all_1 = RANK_1 | RANK_2 | RANK_3 | RANK_4 | RANK_5 | RANK_6 | RANK_7 | RANK_8;
     bitboard_t all_2 = FILE_A | FILE_B | FILE_C | FILE_D | FILE_E | FILE_F | FILE_G | FILE_H;
@@ -142,7 +142,7 @@ int test_bitboard()
     return 0;
 }
 
-typedef int (* test_function)();
+typedef int (* test_function)(void);
 
 struct test_item
 {
@@ -174,7 +174,7 @@ struct test_item tests[] = {
     { NULL, NULL }
 };
 
-void print_tests()
+void print_tests(void)
 {
     struct test_item * current = tests;
     for (; current->name != NULL; ++current) {
@@ -192,7 +192,7 @@ void run_test_item(const struct test_item * item)
     }
 }
 
-void run_all_tests()
+void run_all_tests(void)
 {
     struct test_item * current = tests;
     for (; current->name != NULL; ++current) {

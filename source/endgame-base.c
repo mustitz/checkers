@@ -309,7 +309,7 @@ static void check_choose(const int n, const int k, const uint64_t value)
     }
 }
 
-static int test_choose()
+static int test_choose(void)
 {
     check_choose(20,  2,       190);
     check_choose(32,  5,    201376);
@@ -331,7 +331,7 @@ static void check_offset(
     }
 }
 
-static int test_fr_offsets()
+static int test_fr_offsets(void)
 {
     const int wcode = calc_code_and_check(3, 2, "wcode");
     const int bcode = calc_code_and_check(2, 1, "bcode");
@@ -346,7 +346,7 @@ static int test_fr_offsets()
     return 0;
 }
 
-static int test_index_deindex()
+static int test_index_deindex(void)
 {
     static const int N = 4;
     int indexes[N];
@@ -407,7 +407,7 @@ static void test_one_position_to_index(
     }
 }
 
-static int test_position_to_index()
+static int test_position_to_index(void)
 {
     const int qtest_positions = sizeof(position_index_data) / sizeof(position_index_data[0]);
     const struct position_with_index * const end = position_index_data + qtest_positions;
@@ -468,7 +468,7 @@ static void test_one_index_to_position(
     }
 }
 
-static int test_index_to_position()
+static int test_index_to_position(void)
 {
     const int qtest_positions = sizeof(position_index_data) / sizeof(position_index_data[0]);
     const struct position_with_index * const end = position_index_data + qtest_positions;
@@ -496,7 +496,7 @@ static void check_reverse(const bitboard_t a, const bitboard_t b)
     }
 }
 
-static int test_reverse()
+static int test_reverse(void)
 {
     check_reverse(BOARD, BOARD);
     check_reverse(RANK_1, RANK_8);
@@ -511,7 +511,7 @@ static int test_reverse()
     return 0;
 }
 
-static int test_position_info_total()
+static int test_position_info_total(void)
 {
     const int qtest_positions = sizeof(position_index_data) / sizeof(position_index_data[0]);
     const struct position_with_index * const end = position_index_data + qtest_positions;
@@ -564,32 +564,32 @@ static int test_code_N(const int n)
     return 0;
 }
 
-static int test_code_0()
+static int test_code_0(void)
 {
     return test_code_N(0);
 }
 
-static int test_code_1()
+static int test_code_1(void)
 {
     return test_code_N(1);
 }
 
-static int test_code_2()
+static int test_code_2(void)
 {
     return test_code_N(2);
 }
 
-static int test_code_3()
+static int test_code_3(void)
 {
     return test_code_N(3);
 }
 
-static int test_code_4()
+static int test_code_4(void)
 {
     return test_code_N(4);
 }
 
-static int test_code_5()
+static int test_code_5(void)
 {
     return test_code_N(5);
 }
@@ -610,7 +610,7 @@ static const int expected_pos_codes[13][13] = {
     { 77,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 }
 };
 
-static int test_position_code()
+static int test_position_code(void)
 {
     for (int sim = 0; sim < 13; ++sim)
     for (int mam = 0; mam < 13; ++mam) {

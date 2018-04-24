@@ -264,7 +264,7 @@ void panic(const char * fmt, ...)
     va_end(args);
 }
 
-void fail()
+void fail(void)
 {
     fprintf(stderr, "\n");
     exit(1);
@@ -305,7 +305,7 @@ static void check_mempool_stats(struct mempool * restrict me, size_t used)
 }
 
 #define NTRY  10000
-static int test_mempool()
+static int test_mempool(void)
 {
     static char * pointers[NTRY];
     static size_t sizes[NTRY];
@@ -349,7 +349,7 @@ static int test_mempool()
 
 
 #define NTRY 1000
-static int test_str_map()
+static int test_str_map(void)
 {
     char name[100];
     struct strhash * hash = create_strhash(NULL, 51);
@@ -390,7 +390,7 @@ static int test_str_map()
 #undef NTRY
 
 
-static int test_sets()
+static int test_sets(void)
 {
     if (is_space_char(0)) test_fail("is_space(0) is true.");
 

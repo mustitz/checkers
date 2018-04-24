@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct ai * (*create_ai_func)();
+typedef struct ai * (*create_ai_func)(void);
 struct ai_desc
 {
     const char * name;

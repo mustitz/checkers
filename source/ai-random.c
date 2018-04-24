@@ -34,7 +34,7 @@ void random_ai_free(struct ai * restrict ai)
     free_mempool(me->pool);
 }
 
-struct ai * create_random_ai()
+struct ai * create_random_ai(void)
 {
     struct mempool * pool = create_mempool(1024);
     if (pool == NULL) {
