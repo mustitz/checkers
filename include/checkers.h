@@ -142,13 +142,13 @@ struct mam_take_magic
     bitboard_t next[2];
 };
 
-extern int square_to_index[32];
-extern square_t index_to_square[64];
+extern const int square_to_index[32];
+extern const square_t index_to_square[64];
 extern const char * const upper_square_str[32];
 extern const char * const lower_square_str[32];
-extern struct square_magic square_magic[32];
-extern struct mam_take_magic mam_take_magic_1[32][256];
-extern struct mam_take_magic mam_take_magic_7[32][256];
+extern const struct square_magic square_magic[32];
+extern const struct mam_take_magic mam_take_magic_1[32][256];
+extern const struct mam_take_magic mam_take_magic_7[32][256];
 
 static inline const char * upper_index_str(int index)
 {

@@ -621,7 +621,7 @@ static void print_file()
 {
     printf("#include \"checkers.h\"\n\n");
 
-    printf("int square_to_index[32] = {\n");
+    printf("const int square_to_index[32] = {\n");
     for (int i=0; i<32; ++i) {
         if ((i % 8) == 0) {
             printf("    ");
@@ -640,7 +640,7 @@ static void print_file()
     printf("};\n\n");
 
     printf("#define __ I9\n");
-    printf("square_t index_to_square[64] = {\n");
+    printf("const square_t index_to_square[64] = {\n");
     for (int index = 0; index < 64; ++index) {
 
         if ((index % 8) == 0) {
@@ -700,7 +700,7 @@ static void print_file()
     };
     printf("};\n\n");
 
-    printf("struct square_magic square_magic[32] = {\n");
+    printf("const struct square_magic square_magic[32] = {\n");
     for (int i=0; i<32; ++i) {
         printf("    { 0x%08X, 0x%08X, %2d}%s\n",
             tables.square_magic[i].mask7,
@@ -711,7 +711,7 @@ static void print_file()
     }
     printf("};\n\n");
 
-    printf("struct mam_take_magic mam_take_magic_1[32][256] = {\n");
+    printf("const struct mam_take_magic mam_take_magic_1[32][256] = {\n");
     for (int i=0; i<32; ++i) {
         printf("    {\n");
         for (int j=0; j<256; ++j) {
@@ -727,7 +727,7 @@ static void print_file()
     }
     printf("};\n\n");
 
-    printf("struct mam_take_magic mam_take_magic_7[32][256] = {\n");
+    printf("const struct mam_take_magic mam_take_magic_7[32][256] = {\n");
     for (int i=0; i<32; ++i) {
         printf("    {\n");
         for (int j=0; j<256; ++j) {
