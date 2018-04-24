@@ -1,6 +1,7 @@
 #include "checkers.h"
 
 #define WITH_TESTS
+#include "../source/magic-tables.c"
 #include "../source/mu-data-struct.c"
 #include "../source/mu-parser.c"
 #include "../source/endgame-base.c"

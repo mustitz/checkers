@@ -25,32 +25,6 @@ static inline int calc_code_and_check(const int all, const int sim, const char *
     exit(1);
 }
 
-static uint64_t choose[33][33];
-static const uint64_t U64_OVERFLOW = ~0ull;
-
-static void init_choose(void)
-{
-	uint64_t * restrict data = &choose[0][0];
-
-    for (int n=0; n<33; ++n)
-    for (int k=0; k<33; ++k) {
-        if (k > n) {
-            *data++ = 0;
-            continue;
-        }
-        if (k == n || k == 0) {
-            *data++ = 1;
-            continue;
-        }
-
-        const uint64_t prev1 = data[-34];
-        const uint64_t prev2 = data[-33];
-        const uint64_t value = prev1 + prev2;
-        const int is_overflow = value < prev1 || value < prev2;
-        *data++ = is_overflow ? U64_OVERFLOW : value;
-    }
-}
-
 uint64_t safe_mul(const uint64_t a, const uint64_t b)
 {
     if (a == U64_OVERFLOW) {
@@ -174,8 +148,6 @@ static void init_endgame_entry(
     const int bsim,
     const int bmam)
 {
-    init_choose();
-
     const int wall = wsim + wmam;
     const int ball = bsim + bmam;
 
@@ -540,7 +512,6 @@ static void check_choose(const int n, const int k, const uint64_t value)
 
 static int test_choose()
 {
-    init_choose();
     check_choose(20,  2,       190);
     check_choose(32,  5,    201376);
     check_choose(28, 10,  13123110);
@@ -580,8 +551,6 @@ static int test_fr_offsets()
 
 static int test_index_deindex()
 {
-    init_choose();
-
     static const int N = 4;
     int indexes[N];
     for (uint64_t index=0; index<5000; ++index) {

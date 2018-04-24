@@ -12,6 +12,7 @@ struct tables
     struct square_magic square_magic[32];
     struct mam_take_magic mam_take_magic_1[32][256];
     struct mam_take_magic mam_take_magic_7[32][256];
+    uint64_t choose[33][33];
 };
 
 struct tables tables;
@@ -59,6 +60,7 @@ static void init_square_to_index();
 static void init_index_to_square();
 static void init_strings();
 static void init_magic();
+static void init_choose();
 static void print_file();
 
 int main()
@@ -70,6 +72,7 @@ int main()
     init_index_to_square();
     init_strings();
     init_magic();
+    init_choose();
     print_file();
     return 0;
 }
@@ -428,6 +431,31 @@ static void process_mask(uint32_t mask, int n, const int * squares, int i, bitbo
 
 
 
+static void init_choose(void)
+{
+    uint64_t * restrict data = &tables.choose[0][0];
+
+    for (int n=0; n<33; ++n)
+    for (int k=0; k<33; ++k) {
+        if (k > n) {
+            *data++ = 0;
+            continue;
+        }
+        if (k == n || k == 0) {
+            *data++ = 1;
+            continue;
+        }
+
+        const uint64_t prev1 = data[-34];
+        const uint64_t prev2 = data[-33];
+        const uint64_t value = prev1 + prev2;
+        const int is_overflow = value < prev1 || value < prev2;
+        *data++ = is_overflow ? U64_OVERFLOW : value;
+    }
+}
+
+
+
 static void print_file()
 {
     printf("#include \"checkers.h\"\n\n");
@@ -551,6 +579,16 @@ static void print_file()
              );
         }
         printf("    }%s\n", (i != 31 ? "," : ""));
+    }
+    printf("};\n\n");
+
+    printf("const uint64_t choose[33][33] = {\n");
+    for (int i=0; i<33; ++i) {
+        printf("    {");
+        for (int j=0; j<33; ++j) {
+            printf(" %*lu%s", 10, tables.choose[i][j], (j != 32 ? "," : ""));
+        }
+        printf(" }%s\n", (i != 32 ? "," : ""));
     }
     printf("};\n");
 }

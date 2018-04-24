@@ -11,6 +11,18 @@
 
 
 /*
+ * Misc
+ */
+
+#define U64_OVERFLOW (0ull)
+
+extern const uint64_t choose[33][33];
+
+
+
+
+
+/*
  * Buffer sizes
  */
 
