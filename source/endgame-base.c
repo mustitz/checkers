@@ -265,32 +265,6 @@ void init_endgame_base(void)
     free(filepath);
 }
 
-void debug_position_code(void)
-{
-    static const int precision = 4;
-
-    for (int sim = 0; sim <= 12; ++sim) {
-        for (int mam = 0; mam <= 12; ++mam) {
-
-            const int all = sim + mam;
-
-            if (all == 0) {
-                printf("%*s", precision, "-");
-                continue;
-            }
-
-            if (all > 12) {
-                break;
-            }
-
-            const int code = bitboard_stat_to_code(all, sim);
-            printf("%*d", precision, code);
-        }
-
-        printf("\n");
-    }
-}
-
 const struct position_code_info * get_position_info(const struct position * const position)
 {
     int all_0 = pop_count(position->bitboards[IDX_ALL_0]);
