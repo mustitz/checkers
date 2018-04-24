@@ -3,8 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-struct position_code_info position_codes[SIDE_BITBOARD_CODE_COUNT][SIDE_BITBOARD_CODE_COUNT];
-
 const char * endgame_dir = ".";
 
 void read_endgame_tablebase(struct position_code_info * restrict const info, FILE * restrict const f)
@@ -25,28 +23,6 @@ static inline int calc_code_and_check(const int all, const int sim, const char *
     exit(1);
 }
 
-uint64_t safe_mul(const uint64_t a, const uint64_t b)
-{
-    if (a == U64_OVERFLOW) {
-        return U64_OVERFLOW;
-    }
-
-    if (b == U64_OVERFLOW) {
-        return U64_OVERFLOW;
-    }
-
-    if (a == 0) {
-        return 0;
-    }
-
-    const uint64_t result = a * b;
-    if (result / a != b) {
-        return U64_OVERFLOW;
-    }
-
-    return result;
-}
-
 static inline bitboard_t reverse(const bitboard_t bb)
 {
     const unsigned char * const indexes =(const unsigned char *) &bb;
@@ -59,154 +35,6 @@ static inline bitboard_t reverse(const bitboard_t bb)
 }
 
 
-static uint64_t init_position_info_offset(
-    struct position_code_info * restrict const info)
-{
-    const int wsim = info->wsim;
-    const int bsim = info->bsim;
-    const int wmam = info->wmam;
-    const int bmam = info->bmam;
-
-    uint64_t * restrict offsets = info->fr_offsets;
-    const uint64_t * const begin = offsets + 1;
-    const uint64_t * const end = offsets + 6;
-
-    *offsets++ = 0;
-    for (; offsets != end; ++offsets) {
-        const int wfsim = offsets - begin;
-        const int wosim = wsim - wfsim;
-        if (wosim < 0) {
-            offsets[0] = offsets[-1];
-            continue;
-        }
-
-        const uint64_t m1 = choose[4][wfsim];
-        const uint64_t m2 = choose[24][wosim];
-        const uint64_t m3 = safe_mul(m1, m2);
-        const uint64_t m4 = choose[28-wosim][bsim];
-        const uint64_t m5 = safe_mul(m3, m4);
-
-        if (m5 == U64_OVERFLOW) {
-            fprintf(stderr, "wsim %d, bsim %d, wmam %d, bmam %d:\n", wsim, bsim, wmam, bmam);
-            fprintf(stderr, "  U64 multiplicatation oveflow (sim): %lu * %lu * %lu.\n", m1, m2, m4);
-            exit(1);
-        }
-
-        offsets[0] = offsets[-1] + m5;
-    }
-
-    const uint64_t qsim = offsets[-1];
-    const uint64_t qwmam = choose[32-wsim-bsim][wmam];
-    const uint64_t qbmam = choose[32-wsim-bsim-wmam][bmam];
-
-    const uint64_t m1 = safe_mul(qsim, qwmam);
-    const uint64_t m2 = safe_mul(m1, qbmam);
-    if (m2 == U64_OVERFLOW) {
-        fprintf(stderr, "wsim %d, bsim %d, wmam %d, bmam %d:\n", wsim, bsim, wmam, bmam);
-        fprintf(stderr, "  U64 multiplicatation oveflow (total): %lu * %lu * %lu.\n", qsim, qwmam, qbmam);
-    }
-
-    return m2;
-}
-
-
-
-static void init_endgame_entry(
-    char * restrict const filepath,
-    const size_t filepath_len,
-    const int wsim,
-    const int wmam,
-    const int bsim,
-    const int bmam)
-{
-    const int wall = wsim + wmam;
-    const int ball = bsim + bmam;
-
-    const int wcode = calc_code_and_check(wall, wsim, "wcode");
-    const int bcode = calc_code_and_check(ball, bsim, "bcode");
-
-    struct position_code_info * restrict const info = &position_codes[wcode][bcode];
-
-    const int is_reversed = wcode < bcode;
-
-    info->is_reversed = is_reversed;
-    if (!is_reversed) {
-        info->wall = wall;
-        info->wsim = wsim;
-        info->wmam = wmam;
-        info->ball = ball;
-        info->bsim = bsim;
-        info->bmam = bmam;
-    } else {
-        info->wall = ball;
-        info->wsim = bsim;
-        info->wmam = bmam;
-        info->ball = wall;
-        info->bsim = wsim;
-        info->bmam = wmam;
-    }
-
-    info->total = init_position_info_offset(info);
-
-    const int lo_code = is_reversed ? bcode : wcode;
-    const int hi_code = is_reversed ? wcode : bcode;
-
-    {
-        const int status = snprintf(info->filename, 15, "%02d%02d.ceitb", lo_code, hi_code);
-        if (status < 0) {
-            static int error_count = 0;
-            if (error_count++ == 0) {
-                fprintf(stderr, "sprintf error in %s:%d\n", __FILE__, __LINE__);
-                exit(1);
-            }
-        }
-        info->filename[status] = '\0';
-    }
-
-    {
-        const int status = snprintf(filepath, filepath_len-1, "%s/%s", endgame_dir, info->filename);
-        if (status < 0) {
-            static int error_count = 0;
-            if (error_count++ == 0) {
-                fprintf(stderr, "sprintf error in %s:%d\n", __FILE__, __LINE__);
-                exit(1);
-            }
-        }
-        filepath[status] = '\0';
-    }
-
-    FILE * f = fopen(filepath, "rb");
-    if (f != NULL) {
-        read_endgame_tablebase(info, f);
-        fclose(f);
-    }
-}
-
-void init_endgame_base(void)
-{
-    const size_t filepath_len = strlen(endgame_dir) + 17;
-    char * restrict const filepath = malloc(filepath_len);
-
-    for (int wsim = 0; wsim <= 12; ++wsim)
-    for (int wmam = 0; wmam <= 12 - wsim; ++wmam) {
-
-        if (wsim == 0 && wmam == 0) {
-            continue;
-        }
-
-        for (int bsim = 0; bsim <= 12; ++bsim)
-        for (int bmam = 0; bmam <= 12 - bsim; ++bmam) {
-
-            if (bsim == 0 && bmam == 0) {
-                continue;
-            }
-
-            init_endgame_entry(filepath, filepath_len, wsim, wmam, bsim, bmam);
-        }
-    }
-
-    free(filepath);
-}
 
 const struct position_code_info * get_position_info(const struct position * const position)
 {
@@ -221,7 +49,7 @@ const struct position_code_info * get_position_info(const struct position * cons
 
     int idx_0 = bitboard_stat_to_code(all_0, sim_0);
     int idx_1 = bitboard_stat_to_code(all_1, sim_1);
-    return &position_codes[idx_0][idx_1];
+    return &position_code_infos[idx_0][idx_1];
 }
 
 static inline uint64_t cindex(const int len, const int * indexes)
@@ -505,11 +333,9 @@ static void check_offset(
 
 static int test_fr_offsets()
 {
-    init_endgame_base();
-
     const int wcode = calc_code_and_check(3, 2, "wcode");
     const int bcode = calc_code_and_check(2, 1, "bcode");
-    const struct position_code_info * const info = &position_codes[wcode][bcode];
+    const struct position_code_info * const info = &position_code_infos[wcode][bcode];
 
     check_offset(info, 0, 0);
     check_offset(info, 1, 7176);
@@ -583,8 +409,6 @@ static void test_one_position_to_index(
 
 static int test_position_to_index()
 {
-    init_endgame_base();
-
     const int qtest_positions = sizeof(position_index_data) / sizeof(position_index_data[0]);
     const struct position_with_index * const end = position_index_data + qtest_positions;
     const struct position_with_index * ptr = position_index_data;
@@ -646,8 +470,6 @@ static void test_one_index_to_position(
 
 static int test_index_to_position()
 {
-    init_endgame_base();
-
     const int qtest_positions = sizeof(position_index_data) / sizeof(position_index_data[0]);
     const struct position_with_index * const end = position_index_data + qtest_positions;
     const struct position_with_index * ptr = position_index_data;
@@ -691,8 +513,6 @@ static int test_reverse()
 
 static int test_position_info_total()
 {
-    init_endgame_base();
-
     const int qtest_positions = sizeof(position_index_data) / sizeof(position_index_data[0]);
     const struct position_with_index * const end = position_index_data + qtest_positions;
     const struct position_with_index * ptr = position_index_data;
@@ -724,9 +544,7 @@ static void test_code_index(
 
 static int test_code(const int wcode, const int bcode)
 {
-    init_endgame_base();
-
-    const struct position_code_info * const info = &position_codes[wcode][bcode];
+    const struct position_code_info * const info = &position_code_infos[wcode][bcode];
     static const uint64_t SAMPLE_COUNT = 2014;
     const uint64_t delta = info->total > SAMPLE_COUNT ? info->total / SAMPLE_COUNT : 1;
     for (uint64_t index = 0; index < info->total; index += delta) {

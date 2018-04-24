@@ -14,6 +14,7 @@ struct tables
     struct mam_take_magic mam_take_magic_7[32][256];
     uint64_t choose[33][33];
     bitboard_t reverse_table[4][256];
+    struct position_code_info position_code_infos[SIDE_BITBOARD_CODE_COUNT][SIDE_BITBOARD_CODE_COUNT];
 };
 
 struct tables tables;
@@ -63,6 +64,7 @@ static void init_strings();
 static void init_magic();
 static void init_choose();
 static void init_reverse_table(void);
+static void init_position_code_infos(void);
 static void print_file();
 
 int main()
@@ -76,6 +78,7 @@ int main()
     init_magic();
     init_choose();
     init_reverse_table();
+    init_position_code_infos();
     print_file();
     return 0;
 }
@@ -488,6 +491,132 @@ void init_reverse_table(void)
 
 
 
+static uint64_t init_position_code_info_offset(
+    struct position_code_info * restrict const info)
+{
+    const int wsim = info->wsim;
+    const int bsim = info->bsim;
+    const int wmam = info->wmam;
+    const int bmam = info->bmam;
+
+    uint64_t * restrict offsets = info->fr_offsets;
+    const uint64_t * const begin = offsets + 1;
+    const uint64_t * const end = offsets + 6;
+
+    *offsets++ = 0;
+    for (; offsets != end; ++offsets) {
+        const int wfsim = offsets - begin;
+        const int wosim = wsim - wfsim;
+        if (wosim < 0) {
+            offsets[0] = offsets[-1];
+            continue;
+        }
+
+        const uint64_t m1 = tables.choose[4][wfsim];
+        const uint64_t m2 = tables.choose[24][wosim];
+        const uint64_t m3 = safe_mul(m1, m2);
+        const uint64_t m4 = tables.choose[28-wosim][bsim];
+        const uint64_t m5 = safe_mul(m3, m4);
+
+        if (m5 == U64_OVERFLOW) {
+            fprintf(stderr, "wsim %d, bsim %d, wmam %d, bmam %d:\n", wsim, bsim, wmam, bmam);
+            fprintf(stderr, "U64 multiplicatation oveflow (sim): %lu * %lu * %lu.\n", m1, m2, m4);
+            fprintf(stderr, "Location %s:%d\n", __FILE__, __LINE__);
+            exit(1);
+        }
+
+        offsets[0] = offsets[-1] + m5;
+    }
+
+    const uint64_t qsim = offsets[-1];
+    const uint64_t qwmam = tables.choose[32-wsim-bsim][wmam];
+    const uint64_t qbmam = tables.choose[32-wsim-bsim-wmam][bmam];
+
+    const uint64_t m1 = safe_mul(qsim, qwmam);
+    const uint64_t m2 = safe_mul(m1, qbmam);
+    if (m2 == U64_OVERFLOW) {
+        fprintf(stderr, "wsim %d, bsim %d, wmam %d, bmam %d:\n", wsim, bsim, wmam, bmam);
+        fprintf(stderr, "  U64 multiplicatation oveflow (total): %lu * %lu * %lu.\n", qsim, qwmam, qbmam);
+        fprintf(stderr, "Location %s:%d\n", __FILE__, __LINE__);
+        exit(1);
+    }
+
+    return m2;
+}
+
+static void init_position_code_info_entry(
+    const int wsim,
+    const int wmam,
+    const int bsim,
+    const int bmam)
+{
+    const int wall = wsim + wmam;
+    const int ball = bsim + bmam;
+
+    const int wcode = bitboard_stat_to_code(wall, wsim);
+    const int bcode = bitboard_stat_to_code(ball, bsim);
+    if (wcode < 0 || wcode >= SIDE_BITBOARD_CODE_COUNT || bcode < 0 || bcode >= SIDE_BITBOARD_CODE_COUNT) {
+        fprintf(stderr, "Fatal: wrong wcode, bcode pair %d,%d in %s:%d.\n", wcode, bcode, __FILE__, __LINE__);
+        exit(1);
+    }
+
+    struct position_code_info * restrict const info = &tables.position_code_infos[wcode][bcode];
+
+    const int is_reversed = wcode < bcode;
+
+    info->is_reversed = is_reversed;
+    if (!is_reversed) {
+        info->wall = wall;
+        info->wsim = wsim;
+        info->wmam = wmam;
+        info->ball = ball;
+        info->bsim = bsim;
+        info->bmam = bmam;
+    } else {
+        info->wall = ball;
+        info->wsim = bsim;
+        info->wmam = bmam;
+        info->ball = wall;
+        info->bsim = wsim;
+        info->bmam = wmam;
+    }
+
+    info->total = init_position_code_info_offset(info);
+
+    const int lo_code = is_reversed ? bcode : wcode;
+    const int hi_code = is_reversed ? wcode : bcode;
+
+    const int status = snprintf(info->filename, 15, "%02d%02d.ceitb", lo_code, hi_code);
+    if (status < 0) {
+        fprintf(stderr, "sprintf error in %s:%d\n", __FILE__, __LINE__);
+        exit(1);
+    }
+    info->filename[status] = '\0';
+}
+
+void init_position_code_infos(void)
+{
+    for (int wsim = 0; wsim <= 12; ++wsim)
+    for (int wmam = 0; wmam <= 12 - wsim; ++wmam) {
+
+        if (wsim == 0 && wmam == 0) {
+            continue;
+        }
+
+        for (int bsim = 0; bsim <= 12; ++bsim)
+        for (int bmam = 0; bmam <= 12 - bsim; ++bmam) {
+
+            if (bsim == 0 && bmam == 0) {
+                continue;
+            }
+
+            init_position_code_info_entry(wsim, wmam, bsim, bmam);
+        }
+    }
+}
+
+
+
 static void print_file()
 {
     printf("#include \"checkers.h\"\n\n");
@@ -624,7 +753,6 @@ static void print_file()
     }
     printf("};\n\n");
 
-
     printf("const bitboard_t reverse_table[4][256] = {\n");
     for (int i=0; i<4; ++i) {
         printf("    {\n");
@@ -639,6 +767,28 @@ static void print_file()
             }
         }
         printf("    }%s\n", (i != 3 ? "," : ""));
+    }
+    printf("};\n\n");
+
+    printf("const struct position_code_info position_code_infos[SIDE_BITBOARD_CODE_COUNT][SIDE_BITBOARD_CODE_COUNT] = {\n");
+    for (int i=0; i<SIDE_BITBOARD_CODE_COUNT; ++i) {
+        printf("    {\n");
+        for (int j=0; j<SIDE_BITBOARD_CODE_COUNT; ++j) {
+            const struct position_code_info * const info = &tables.position_code_infos[i][j];
+            printf("        { %d, %d, %2d, %2d, %2d, %2d, %2d, %2d, \"%s\", { %*lu, %*lu, %*lu, %*lu, %*lu, %*lu }, %*lu }%s\n",
+                info->has_tablebase, info->is_reversed,
+                info->wall, info->wsim, info->wmam, info->ball, info->bsim, info->bmam,
+                info->filename,
+                1, info->fr_offsets[0],
+                13, info->fr_offsets[1],
+                13, info->fr_offsets[2],
+                13, info->fr_offsets[3],
+                13, info->fr_offsets[4],
+                13, info->fr_offsets[5],
+                20, info->total,
+                (j != SIDE_BITBOARD_CODE_COUNT-1 ? "," : ""));
+        }
+        printf("    }%s\n", (i != SIDE_BITBOARD_CODE_COUNT-1 ? "," : ""));
     }
     printf("};\n");
 }

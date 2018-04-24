@@ -11,10 +11,32 @@
 
 
 /*
- * Misc
+ * Math
  */
 
 #define U64_OVERFLOW (0ull)
+
+static inline uint64_t safe_mul(const uint64_t a, const uint64_t b)
+{
+    if (a == U64_OVERFLOW) {
+        return U64_OVERFLOW;
+    }
+
+    if (b == U64_OVERFLOW) {
+        return U64_OVERFLOW;
+    }
+
+    if (a == 0) {
+        return 0;
+    }
+
+    const uint64_t result = a * b;
+    if (result / a != b) {
+        return U64_OVERFLOW;
+    }
+
+    return result;
+}
 
 extern const uint64_t choose[33][33];
 
@@ -317,9 +339,7 @@ struct position_code_info
 };
 
 extern const bitboard_t reverse_table[4][256];
-extern struct position_code_info position_codes[SIDE_BITBOARD_CODE_COUNT][SIDE_BITBOARD_CODE_COUNT];
-
-void init_endgame_base(void);
+extern const struct position_code_info position_code_infos[SIDE_BITBOARD_CODE_COUNT][SIDE_BITBOARD_CODE_COUNT];
 
 static inline int bitboard_stat_to_code(const int all_0, const int sim_0)
 {
