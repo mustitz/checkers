@@ -14,6 +14,7 @@
 #define KW_SET              7
 #define KW_ETB              8
 #define KW_INFO             9
+#define KW_GEN             10
 
 #define ITEM(name) { #name, KW_##name }
 struct keyword_desc root_level_keywords[] = {
@@ -27,6 +28,7 @@ struct keyword_desc root_level_keywords[] = {
     ITEM(SET),
     ITEM(ETB),
     ITEM(INFO),
+    ITEM(GEN),
     { NULL, 0 }
 };
 #undef ITEM
@@ -423,6 +425,48 @@ static void process_etb_info(struct cmd_parser * restrict me)
     printf("ETB INFO: Not implemented\n");
 }
 
+static void process_etb_gen(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    if (parser_check_eol(lp)) {
+        return error(me, "ETB GEN expected endgame abbrevation, for example WB, wwB, etc.");
+    }
+
+    int wmam = 0;
+    int wsim = 0;
+    int bmam = 0;
+    int bsim = 0;
+
+    for (;; ++lp->current) {
+        const int ch = *lp->current;
+        if (ch >= '\0' && ch <= ' ') {
+            break;
+        }
+        switch (ch) {
+            case 'W':
+                ++wmam;
+                break;
+            case 'w':
+                ++wsim;
+                break;
+            case 'B':
+                ++bmam;
+                break;
+            case 'b':
+                ++bsim;
+                break;
+            default:
+                return error(me, "iWrong endgame abbrevation, only WBwb characters are supported.");
+        }
+    }
+
+    if (!parser_check_eol(lp)) {
+        error(me, "End of line expected (ETB GEN abbrevation command is parsed), but something was found.");
+    }
+
+    gen_etb(wmam+wsim, wsim, bmam+bsim, bsim);
+}
+
 static void process_etb(struct cmd_parser * restrict me)
 {
     int keyword = read_keyword(me);
@@ -438,6 +482,8 @@ static void process_etb(struct cmd_parser * restrict me)
     switch (keyword) {
         case KW_INFO:
             return process_etb_info(me);
+        case KW_GEN:
+            return process_etb_gen(me);
     }
 
     error(me, "Unexpected keyword in ETB command.");

@@ -295,6 +295,58 @@ int index_to_position(
 
 
 
+static void gen_etb_via_info(
+    const struct position_code_info * const info)
+{
+    printf("Generating endgame %d+%d vs %d+%d.\n", info->wsim, info->wmam, info->bsim, info->bmam);
+    printf("Not implemented :)\n");
+}
+
+void gen_etb(const int wall, const int wsim, const int ball, const int bsim)
+{
+    if (wall == 0) {
+        printf("No white checkers, nothing to generate.\n");
+        return;
+    }
+
+    if (ball == 0) {
+        printf("No black checkers, nothing to generate.\n");
+        return;
+    }
+
+    if (wall < 0 || ball < 0) {
+        printf("This endgame type is not supported.\n");
+        return;
+    }
+
+    const int wcode = bitboard_stat_to_code(wall, wsim);
+    const int bcode = bitboard_stat_to_code(ball, bsim);
+
+    const int is_valid_codes = 1
+        && wcode >= 0
+        && wcode < SIDE_BITBOARD_CODE_COUNT
+        && bcode >= 0
+        && bcode < SIDE_BITBOARD_CODE_COUNT
+    ;
+
+    if (!is_valid_codes) {
+        printf("This endgame type is not supported.\n");
+        return;
+    }
+
+    const struct position_code_info * const info1 = &position_code_infos[wcode][bcode];
+    if (!info1->is_reversed) {
+        return gen_etb_via_info(info1);
+    }
+
+    const struct position_code_info * const info2 = &position_code_infos[bcode][wcode];
+    if (!info2->is_reversed) {
+        return gen_etb_via_info(info2);
+    }
+
+    printf("This endgame type is not supported.\n");
+}
+
 /*
  * Tests
  */
