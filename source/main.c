@@ -12,7 +12,7 @@
 #define KW_FEN              5
 #define KW_AI               6
 #define KW_SET              7
-#define KW_TB               8
+#define KW_ETB              8
 #define KW_INFO             9
 
 #define ITEM(name) { #name, KW_##name }
@@ -25,7 +25,7 @@ struct keyword_desc root_level_keywords[] = {
     ITEM(FEN),
     ITEM(AI),
     ITEM(SET),
-    ITEM(TB),
+    ITEM(ETB),
     ITEM(INFO),
     { NULL, 0 }
 };
@@ -85,7 +85,7 @@ static void process_move(struct cmd_parser * restrict me);
 static void process_fen(struct cmd_parser * restrict me);
 static void process_ai(struct cmd_parser * restrict me);
 static void process_set(struct cmd_parser * restrict me);
-static void process_tb(struct cmd_parser * restrict me);
+static void process_etb(struct cmd_parser * restrict me);
 
 static int process_cmd(struct cmd_parser * restrict me, const char * cmd)
 {
@@ -125,8 +125,8 @@ static int process_cmd(struct cmd_parser * restrict me, const char * cmd)
         case KW_SET:
             process_set(me);
             break;
-        case KW_TB:
-            process_tb(me);
+        case KW_ETB:
+            process_etb(me);
             break;
         default:
             error(me, "Unexpected keyword at the begginning of the line.");
@@ -413,34 +413,34 @@ static void process_set_ai(struct cmd_parser * restrict me)
     game_set_ai(me->game, name, end-begin);
 }
 
-static void process_tb_info(struct cmd_parser * restrict me)
+static void process_etb_info(struct cmd_parser * restrict me)
 {
     struct line_parser * restrict lp = &me->line_parser;
     if (!parser_check_eol(lp)) {
-        return error(me, "End of line expected (TB INFO command is parsed), but someting was found.");
+        return error(me, "End of line expected (ETB INFO command is parsed), but someting was found.");
     }
 
-    printf("TB INFO: Not implemented\n");
+    printf("ETB INFO: Not implemented\n");
 }
 
-static void process_tb(struct cmd_parser * restrict me)
+static void process_etb(struct cmd_parser * restrict me)
 {
     int keyword = read_keyword(me);
 
     if (keyword == -1) {
-        return error(me, "Invalid lexem in TB command.");
+        return error(me, "Invalid lexem in ETB command.");
     }
 
     if (keyword == 0) {
-        return error(me, "Invalid keyword in TB command.");
+        return error(me, "Invalid keyword in ETB command.");
     }
 
     switch (keyword) {
         case KW_INFO:
-            return process_tb_info(me);
+            return process_etb_info(me);
     }
 
-    error(me, "Unexpected keyword in TB command.");
+    error(me, "Unexpected keyword in ETB command.");
 }
 
 int main()
