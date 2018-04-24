@@ -520,7 +520,7 @@ int index_to_position(
     cdeindex(info->bmam, bmam_indexes, idx_bmam);
 
     const bitboard_t wfsim_bb = indexes_to_bitboard(wfsim, wfsim_indexes, BOARD ^ RANK_1);
-    const bitboard_t wosim_bb = indexes_to_bitboard(wosim, wosim_indexes, RANK_1 | RANK_7);
+    const bitboard_t wosim_bb = indexes_to_bitboard(wosim, wosim_indexes, RANK_1 | RANK_8);
     const bitboard_t bsim_bb = indexes_to_bitboard(info->bsim, bsim_indexes, wosim_bb | RANK_1);
 
     const bitboard_t sim_bb = wfsim_bb | wosim_bb | bsim_bb;
