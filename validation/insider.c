@@ -90,7 +90,7 @@ int test_bitboard()
     }
 
     if (all_3 != BOARD) {
-        test_fail("Invalid all_3.\n");
+        test_fail("Invalid all_3.");
     }
 
     if (pop_count(all_1) != 32) {

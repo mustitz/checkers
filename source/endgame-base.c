@@ -560,7 +560,7 @@ static void check_choose(const int n, const int k, const uint64_t value)
 {
     const uint64_t result = choose[n][k];
     if (result != value) {
-        test_fail("Wrong choose C(%d, %d) = %lu, expected %lu.\n", n, k, result, value);
+        test_fail("Wrong choose C(%d, %d) = %lu, expected %lu.", n, k, result, value);
     }
 }
 
@@ -583,7 +583,7 @@ static void check_offset(
 {
     const uint64_t result = info->fr_offsets[index];
     if (result != value) {
-        test_fail("Wrong offset %lu, expected %lu for index %d in position info struct.\n", result, value, index);
+        test_fail("Wrong offset %lu, expected %lu for index %d in position info struct.", result, value, index);
     }
 }
 
@@ -614,7 +614,7 @@ static int test_index_deindex()
         cdeindex(N, indexes, index);
         uint64_t calculated = cindex(N, indexes);
         if (index != calculated) {
-            test_fail("Wring index/deindex for %lu (%d, %d, %d, %d), calculated %lu.\n",
+            test_fail("Wring index/deindex for %lu (%d, %d, %d, %d), calculated %lu.",
                 index, indexes[0], indexes[1], indexes[2], indexes[3], calculated);
         }
     }
@@ -663,7 +663,7 @@ static void test_one_position_to_index(
     const struct position_code_info * const info = get_position_info(position);
     const uint64_t calculated = position_to_index(position, info);
     if (calculated != index) {
-        test_fail("Wrong %s position index, expected %lu, calculated %lu.\n", title, index, calculated);
+        test_fail("Wrong %s position index, expected %lu, calculated %lu.", title, index, calculated);
     }
 }
 
@@ -723,11 +723,11 @@ static void test_one_index_to_position(
     const int status = index_to_position(&calculated, info, index);
 
     if (status != 0) {
-        test_fail("Wrong status %d for %s position.\n", status, title);
+        test_fail("Wrong status %d for %s position.", status, title);
     }
 
     if (cmp_positions(&calculated, position) != 0) {
-        test_fail("Position (%s) mismatch!\n", title);
+        test_fail("Position (%s) mismatch!", title);
     }
 }
 
@@ -754,11 +754,11 @@ static void check_reverse(const bitboard_t a, const bitboard_t b)
     const bitboard_t d = reverse(b);
 
     if (b != c) {
-        test_fail("Wrong reverse for bitboards 0x%08X (0x%08X) and 0x%08X (0x%08X)\n", a, c, b, d);
+        test_fail("Wrong reverse for bitboards 0x%08X (0x%08X) and 0x%08X (0x%08X).", a, c, b, d);
     }
 
     if (a != d) {
-        test_fail("Wrong reverse for bitboards 0x%08X (0x%08X) and 0x%08X (0x%08X)\n", b, d, a, c);
+        test_fail("Wrong reverse for bitboards 0x%08X (0x%08X) and 0x%08X (0x%08X).", b, d, a, c);
     }
 }
 

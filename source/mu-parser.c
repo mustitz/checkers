@@ -331,7 +331,7 @@ static int test_try_int(
             "  line = `%s'\n"
             "  current = `%s', next char = `%c'\n"
             "  value expected %d, actual %d,\n"
-            "  error expected %d, actual %d.\n",
+            "  error expected %d, actual %d.",
             line, lp->current, next_ch,
             expected_value, value, expected_err, err
         );
