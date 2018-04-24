@@ -163,6 +163,12 @@ struct test_item tests[] = {
     { "index_to_position", &test_index_to_position },
     { "reverse", &test_reverse },
     { "position_info_total", &test_position_info_total },
+    { "code_0", &test_code_0 },
+    { "code_1", &test_code_1 },
+    { "code_2", &test_code_2 },
+    { "code_3", &test_code_3 },
+    { "code_4", &test_code_4 },
+    { "code_5", &test_code_5 },
     { NULL, NULL }
 };
 

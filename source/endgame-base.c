@@ -797,4 +797,73 @@ static int test_position_info_total()
     return 0;
 }
 
+static void test_code_index(
+    const struct position_code_info * const info,
+    const uint64_t index)
+{
+    struct position position;
+    int status = index_to_position(&position, info, index);
+    if (status != 0) {
+        test_fail("index_to_position fails for index %lu.", index);
+    }
+    uint64_t index0 = position_to_index(&position, info);
+    if (index != index0) {
+        test_fail("Rotation index mismatch: %lu -> position -> %lu.", index, index0);
+    }
+}
+
+static int test_code(const int wcode, const int bcode)
+{
+    init_endgame_base();
+    init_reverse_table();
+
+    const struct position_code_info * const info = &position_codes[wcode][bcode];
+    static const uint64_t SAMPLE_COUNT = 2014;
+    const uint64_t delta = info->total > SAMPLE_COUNT ? info->total / SAMPLE_COUNT : 1;
+    for (uint64_t index = 0; index < info->total; index += delta) {
+        test_code_index(info, index);
+    }
+
+    return 0;
+}
+
+static int test_code_N(const int n)
+{
+    printf("%d\n", n);
+    for (int i=0; i<=n; ++i) {
+        test_code(i, n-i);
+    }
+
+    return 0;
+}
+
+static int test_code_0()
+{
+    return test_code_N(0);
+}
+
+static int test_code_1()
+{
+    return test_code_N(1);
+}
+
+static int test_code_2()
+{
+    return test_code_N(2);
+}
+
+static int test_code_3()
+{
+    return test_code_N(3);
+}
+
+static int test_code_4()
+{
+    return test_code_N(4);
+}
+
+static int test_code_5()
+{
+    return test_code_N(5);
+}
 #endif
