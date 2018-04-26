@@ -295,11 +295,78 @@ int index_to_position(
 
 
 
+struct gen_etb_context
+{
+    struct mempool * mempool;
+    int8_t * estimations;
+};
+
+static void run_etb_generation(
+    struct gen_etb_context * restrict const me,
+    const struct position_code_info * const info)
+{
+    printf("Not implemented :)\n");
+}
+
+static inline void * gen_etb_alloc(
+    struct gen_etb_context * restrict const me,
+    const size_t sz,
+    const char * const title)
+{
+    struct mempool * restrict const mempool = me->mempool;
+    mempool_align(mempool, 256);
+    void * restrict const result = mempool_alloc(mempool, sz);
+    if (result == NULL) {
+        fprintf(stderr, "Fail to allocate %s from mempool, %lu bytes are required.\n", title, sz);
+    }
+    return result;
+}
+
+static int alloc_gen_etb_context(
+    struct gen_etb_context * restrict const me,
+    const struct position_code_info * const info)
+{
+    const size_t mempool_sz = 1024 * 1024;
+    me->mempool = create_mempool(mempool_sz);
+    if (me->mempool == NULL) {
+        fprintf(stderr, "Fail to create mempool with sz = %lu.\n", mempool_sz);
+        return 1;
+    }
+
+    const size_t estimations_sz = info->total * sizeof(me->estimations[0]);
+    me->estimations = gen_etb_alloc(me, estimations_sz, "estimations array");
+    if (me->estimations == NULL) {
+        return 1;
+    }
+
+    return 0;
+}
+
+static void free_gen_etb_context(
+    struct gen_etb_context * restrict const me)
+{
+    if (me->mempool != NULL) {
+        free_mempool(me->mempool);
+    }
+}
+
 static void gen_etb_via_info(
     const struct position_code_info * const info)
 {
     printf("Generating endgame %d+%d vs %d+%d.\n", info->wsim, info->wmam, info->bsim, info->bmam);
-    printf("Not implemented :)\n");
+
+    struct gen_etb_context gen_etb_context = {
+        .estimations = NULL
+    };
+    struct gen_etb_context * restrict const me = &gen_etb_context;
+
+    const int status = alloc_gen_etb_context(me, info);
+    if (status == 0) {
+        run_etb_generation(me, info);
+    }
+
+    free_gen_etb_context(me);
+
 }
 
 void gen_etb(const int wall, const int wsim, const int ball, const int bsim)
