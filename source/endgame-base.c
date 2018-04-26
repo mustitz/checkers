@@ -298,14 +298,51 @@ int index_to_position(
 struct gen_etb_context
 {
     struct mempool * mempool;
+    struct move_ctx * move_ctx;
     int8_t * estimations;
 };
+
+static int calc_estimate_and_moves(
+    struct gen_etb_context * restrict const me,
+    const struct position_code_info * const info,
+    const uint64_t index)
+{
+    struct position position_storage;
+    struct position * restrict const position = &position_storage;
+
+    const int status = index_to_position(position, info, index);
+    if (status != 0) {
+        fprintf(stderr, "index_to_position failed for index = %lu.\n", index);
+        return status;
+    }
+
+    struct move_ctx * restrict const ctx = me->move_ctx;
+    ctx->position = position;
+    gen_moves(ctx);
+
+    const int answer_count = ctx->answer_count;
+    int8_t * restrict const estimation = me->estimations + index;
+    if (answer_count == 0) {
+        *estimation = -1;
+        return 0;
+    }
+
+    *estimation = 0;
+    return 0;
+}
 
 static void run_etb_generation(
     struct gen_etb_context * restrict const me,
     const struct position_code_info * const info)
 {
-    printf("Not implemented :)\n");
+    for (uint64_t index=0; index<info->total; ++index) {
+        const int status = calc_estimate_and_moves(me, info, index);
+        if (status != 0) {
+            return;
+        }
+    }
+
+    printf("Not implemented yet :)\n");
 }
 
 static inline void * gen_etb_alloc(
@@ -336,6 +373,30 @@ static int alloc_gen_etb_context(
     const size_t estimations_sz = info->total * sizeof(me->estimations[0]);
     me->estimations = gen_etb_alloc(me, estimations_sz, "estimations array");
     if (me->estimations == NULL) {
+        return 1;
+    }
+
+    const size_t move_ctx_sz = sizeof(struct move_ctx);
+    me->move_ctx = gen_etb_alloc(me, move_ctx_sz, "move context");
+    if (me->move_ctx == NULL) {
+        return 1;
+    }
+
+    const size_t buf_taking_sz = BUF_SIZE__TAKING * sizeof(struct taking);
+
+    me->move_ctx->sim_taking = gen_etb_alloc(me, buf_taking_sz, "taking buffer for simples");
+    if (me->move_ctx->sim_taking == NULL) {
+        return 1;
+    }
+
+    me->move_ctx->mam_taking = gen_etb_alloc(me, buf_taking_sz, "taking buffer for mams");
+    if (me->move_ctx->mam_taking == NULL) {
+        return 1;
+    }
+
+    const size_t answers_sz = BUF_SIZE__ANSWERS * sizeof(struct position);
+    me->move_ctx->answers = gen_etb_alloc(me, answers_sz, "answers array");
+    if (me->move_ctx->answers == NULL) {
         return 1;
     }
 
@@ -419,6 +480,11 @@ void gen_etb(const int wall, const int wsim, const int ball, const int bsim)
  */
 
 #ifdef WITH_TESTS
+
+void gen_moves(struct move_ctx * restrict ctx)
+{
+    test_fail("Call to undefinite function “%s”.\n", __FUNCTION__);
+}
 
 static void check_choose(const int n, const int k, const uint64_t value)
 {
