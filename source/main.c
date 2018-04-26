@@ -209,7 +209,7 @@ static void process_fen(struct cmd_parser * restrict me)
 {
     struct line_parser * restrict lp = &me->line_parser;
     if (parser_check_eol(lp)) {
-        game_print_fen(me->game);
+        position_print_fen(me->game->position);
     } else {
         struct position new_position;
         if (parse_fen(me, &new_position) == 0) {

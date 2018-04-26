@@ -244,10 +244,8 @@ void game_move_select(struct game * restrict me, int num)
 
 void print_side(const char * side, bitboard_t sim, bitboard_t mam);
 
-void game_print_fen(const struct game * me)
+void position_print_fen(const struct position * const position)
 {
-    const struct position * position = me->position;
-
     if (position->active == WHITE) {
         printf("W:");
     }

@@ -245,6 +245,7 @@ struct move_ctx
 
 void gen_moves(struct move_ctx * restrict ctx);
 void user_friendly_gen_moves(struct move_ctx * restrict ctx);
+void position_print_fen(const struct position * position);
 
 
 
