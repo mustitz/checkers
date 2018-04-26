@@ -302,6 +302,7 @@ struct gen_etb_context
     struct mempool * mempool;
     struct move_ctx * move_ctx;
     int8_t * estimations;
+    uint64_t * * answer_indexes;
     uint64_t * current_move;
     const uint64_t * last_move;
 };
@@ -343,8 +344,10 @@ static int calc_estimate_and_moves(
 
     const int answer_count = ctx->answer_count;
     int8_t * restrict const estimation = me->estimations + index;
+    uint64_t * restrict * const answer_index = me->answer_indexes + index;
     if (answer_count == 0) {
         *estimation = -1;
+        *answer_index = NULL;
         return 0;
     }
 
@@ -366,6 +369,7 @@ static int calc_estimate_and_moves(
         const bitboard_t future_enemy_bb = answer->bitboards[IDX_ALL + enemy];
         if (future_enemy_bb == 0) {
             *estimation = +1;
+            *answer_index = NULL;
             return 0;
         }
 
@@ -383,6 +387,7 @@ static int calc_estimate_and_moves(
     }
 
     *current_move++ = U64_OVERFLOW;
+    *answer_index = me->current_move;
     me->current_move = current_move;
     *estimation = 0;
     return 0;
@@ -392,6 +397,7 @@ static void run_etb_generation(
     struct gen_etb_context * restrict const me,
     const struct position_code_info * const info)
 {
+    printf("First pass: generate all possible answers.\n");
     for (uint64_t index=0; index<info->total; ++index) {
         const int status = calc_estimate_and_moves(me, info, index);
         if (status != 0) {
@@ -430,6 +436,12 @@ static int alloc_gen_etb_context(
     const size_t estimations_sz = info->total * sizeof(me->estimations[0]);
     me->estimations = gen_etb_alloc(me, estimations_sz, "estimations array");
     if (me->estimations == NULL) {
+        return 1;
+    }
+
+    const size_t answer_indexes_sz = info->total * sizeof(me->answer_indexes[0]);
+    me->answer_indexes = gen_etb_alloc(me, answer_indexes_sz, "answer indexes array");
+    if (me->answer_indexes == NULL) {
         return 1;
     }
 
