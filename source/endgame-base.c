@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define MOVE_INC_SZ     (1024 * 256)
+
 const char * endgame_dir = ".";
 
 void read_endgame_tablebase(struct position_code_info * restrict const info, FILE * restrict const f)
@@ -300,7 +302,26 @@ struct gen_etb_context
     struct mempool * mempool;
     struct move_ctx * move_ctx;
     int8_t * estimations;
+    uint64_t * current_move;
+    const uint64_t * last_move;
 };
+
+static inline void grow_moves(
+    struct gen_etb_context * restrict const me,
+    const int needed)
+{
+    if (me->current_move + needed < me->last_move) {
+        return;
+    }
+
+    me->current_move = mempool_alloc(me->mempool, MOVE_INC_SZ);
+    if (me->current_move == NULL) {
+        fprintf(stderr, "Cannot grow moves with sz = %d.\n", MOVE_INC_SZ);
+        return;
+    }
+
+    me->last_move = me->current_move + MOVE_INC_SZ / sizeof(me->current_move[0]);
+}
 
 static int calc_estimate_and_moves(
     struct gen_etb_context * restrict const me,
@@ -327,6 +348,42 @@ static int calc_estimate_and_moves(
         return 0;
     }
 
+    const int our = position->active;
+    const int enemy = position->active ^ 1;
+    const int qcurrent_sim = pop_count(position->bitboards[IDX_SIM + our]);
+    const bitboard_t current_enemy_bb = position->bitboards[IDX_ALL + enemy];
+
+    grow_moves(me, answer_count + 1);
+    if (me->current_move == NULL) {
+        return 1;
+    }
+    uint64_t * restrict current_move = me->current_move;
+
+    const struct position * const end = ctx->answers + answer_count;
+    const struct position * answer = ctx->answers;
+    const struct move * move = ctx->moves;
+    for (; answer != end; ++answer, ++move) {
+        const bitboard_t future_enemy_bb = answer->bitboards[IDX_ALL + enemy];
+        if (future_enemy_bb == 0) {
+            *estimation = +1;
+            return 0;
+        }
+
+        const bitboard_t sim_bb = answer->bitboards[IDX_SIM + our];
+        if (current_enemy_bb != future_enemy_bb || qcurrent_sim != pop_count(sim_bb)) {
+            /* TODO */ fprintf(stderr, "Info from lower endgames is not implemented!\n");
+            printf("Current position: current_enemy_bb = 0x%08X, qcurrent_sim = %d, ", current_enemy_bb, qcurrent_sim);
+            position_print_fen(position);
+            printf("Future position: future_enemy_bb = 0x%08X, sim_bb = 0x%08X, pop_count(sim_bb) = %d, ", future_enemy_bb, sim_bb, pop_count(sim_bb));
+            position_print_fen(answer);
+            return 1;
+        }
+
+        *current_move++ = position_to_index(answer, info);
+    }
+
+    *current_move++ = U64_OVERFLOW;
+    me->current_move = current_move;
     *estimation = 0;
     return 0;
 }
@@ -421,6 +478,9 @@ static void gen_etb_via_info(
     };
     struct gen_etb_context * restrict const me = &gen_etb_context;
 
+    me->current_move = NULL;
+    me->last_move = NULL;
+
     const int status = alloc_gen_etb_context(me, info);
     if (status == 0) {
         run_etb_generation(me, info);
@@ -482,6 +542,11 @@ void gen_etb(const int wall, const int wsim, const int ball, const int bsim)
 #ifdef WITH_TESTS
 
 void gen_moves(struct move_ctx * restrict ctx)
+{
+    test_fail("Call to undefinite function “%s”.\n", __FUNCTION__);
+}
+
+void position_print_fen(const struct position * const position)
 {
     test_fail("Call to undefinite function “%s”.\n", __FUNCTION__);
 }
