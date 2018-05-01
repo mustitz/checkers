@@ -1,11 +1,109 @@
 #include "checkers.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #define MOVE_INC_SZ     (1024 * 256)
 
+#define HEADER_SZ       256
+#define VERSION_HI      1
+#define VERSION_LO      0
+#define SIGNATURE       "ETB Rus Checkers"
+
 char etb_dir[1024] = ".";
+
+struct etb_header
+{
+    char signature[16];
+    uint32_t version_hi;
+    uint32_t version_lo;
+    uint32_t header_sz;
+    uint32_t reserved;
+
+    int32_t wsim;
+    int32_t wmam;
+    int32_t bsim;
+    int32_t bmam;
+};
+
+static void save_etb_in_file(
+    const struct position_code_info * const info,
+    const void * data,
+    const struct etb_header * const header,
+    FILE * const f)
+{
+    const size_t header_sz = fwrite(header, 1, HEADER_SZ, f);
+    if (header_sz != HEADER_SZ) {
+        fprintf(stderr, "File write error (header).\n");
+        return;
+    }
+
+    const size_t data_sz = fwrite(data, 1, info->total, f);
+    if (data_sz != info->total) {
+        fprintf(stderr, "File write error (data).\n");
+        return;
+    }
+}
+
+static void save_etb_with_header(
+    const struct position_code_info * const info,
+    const void * data,
+    const struct etb_header * const header,
+    const char * const filepath)
+{
+    FILE * const f = fopen(filepath, "wb");
+    if (f == NULL) {
+        fprintf(stderr, "Cannot open file “%s”, errno = %d, %s.\n", filepath, errno, strerror(errno));
+        return;
+    }
+
+    save_etb_in_file(info, data, header, f);
+
+    fclose(f);
+}
+
+static void save_etb(
+    const struct position_code_info * const info,
+    const void * data)
+{
+    const uint32_t header_sz = sizeof(struct etb_header);
+    if (header_sz > HEADER_SZ) {
+        fprintf(stderr, "Assertion fails, sizeof struct etb_header %u is more than HEADER_SZ = %d.\n", header_sz, HEADER_SZ);
+    }
+
+    char header_storage[HEADER_SZ] = { 0 };
+    struct etb_header * restrict const header = (void*)header_storage;
+
+    memset(header->signature, '\0', 16);
+    strncpy(header->signature, SIGNATURE, 16);
+
+    header->version_hi = VERSION_HI;
+    header->version_lo = VERSION_LO;
+    header->header_sz = HEADER_SZ;
+
+    header->wsim = info->wsim;
+    header->wmam = info->wmam;
+    header->bsim = info->bsim;
+    header->bmam = info->bmam;
+
+    const size_t etb_dir_len = strlen(etb_dir);
+    char * restrict const end = etb_dir + etb_dir_len;
+    const size_t avail = 1022 - etb_dir_len;
+
+    if (avail <= 16) {
+        fprintf(stderr, "ETB file path len is exceeded.\n");
+        return;
+    }
+
+    end[0] = '/';
+    strncpy(end+1, info->filename, 16);
+    end[17] = '\0';
+
+    save_etb_with_header(info, data, header, etb_dir);
+
+    end[0] = '\0';
+}
 
 void etb_set_dir(const char * dir, const int len)
 {
@@ -570,6 +668,8 @@ static void run_etb_generation(
         }
     }
 
+    printf("Generation done, saving...\n");
+    save_etb(info, me->estimations);
     printf("Finished!\n");
 }
 
