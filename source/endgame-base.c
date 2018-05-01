@@ -1,5 +1,6 @@
 #include "checkers.h"
 
+#include <dirent.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -230,9 +231,68 @@ static int etb_load(
     return status;
 }
 
+void etb_load_dir(DIR * const restrict dir)
+{
+    for (;;) {
+        struct dirent * restrict const file = readdir(dir);
+        if (file == NULL) {
+            break;
+        }
+
+        const int is_special = 0
+            || strcmp(file->d_name, ".") == 0
+            || strcmp(file->d_name, "..") == 0
+        ;
+
+        if (is_special) {
+            continue;
+        }
+
+        const int ch1 = file->d_name[0] - '0';
+        const int ch2 = file->d_name[1] - '0';
+        const int ch3 = file->d_name[2] - '0';
+        const int ch4 = file->d_name[3] - '0';
+
+        if (ch1 < 0 || ch1 > 9) continue;
+        if (ch2 < 0 || ch2 > 9) continue;
+        if (ch3 < 0 || ch3 > 9) continue;
+        if (ch4 < 0 || ch4 > 9) continue;
+
+        const int wcode = 10 * ch1 + ch2;
+        const int bcode = 10 * ch3 + ch4;
+
+        const int is_valid_codes = 1
+            && wcode >= 0 && wcode < SIDE_BITBOARD_CODE_COUNT
+            && bcode >= 0 && bcode < SIDE_BITBOARD_CODE_COUNT
+        ;
+
+        if (!is_valid_codes) {
+            continue;
+        }
+
+        if (strcmp(file->d_name + 4, ".ceitb") != 0) {
+            continue;
+        }
+
+        const struct position_code_info * const info = &position_code_infos[wcode][bcode];
+        const int status = etb_load(info);
+        if (status == 0) {
+            printf("Load file “%s”.\n", info->filename);
+        }
+    }
+}
+
 void etb_load_all(void)
 {
-    fprintf(stderr, "Not implemented!\n");
+    DIR * dir = opendir(etb_dir);
+    if (dir == NULL) {
+        fprintf(stderr, "Cannot open dir “%s”, errno = %d, %s.\n", etb_dir, errno, strerror(errno));
+        return;
+    }
+
+    etb_load_dir(dir);
+
+    closedir(dir);
 }
 
 void etb_set_dir(const char * dir, const int len)
