@@ -14,7 +14,7 @@
  * Math
  */
 
-#define U64_OVERFLOW (0ull)
+#define U64_OVERFLOW (~(uint64_t)0)
 
 static inline uint64_t safe_mul(const uint64_t a, const uint64_t b)
 {
