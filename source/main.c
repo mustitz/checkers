@@ -16,6 +16,7 @@
 #define KW_INFO             9
 #define KW_GEN             10
 #define KW_ETB_DIR         11
+#define KW_LOAD            12
 
 #define ITEM(name) { #name, KW_##name }
 struct keyword_desc root_level_keywords[] = {
@@ -31,6 +32,7 @@ struct keyword_desc root_level_keywords[] = {
     ITEM(INFO),
     ITEM(GEN),
     ITEM(ETB_DIR),
+    ITEM(LOAD),
     { NULL, 0 }
 };
 #undef ITEM
@@ -491,6 +493,17 @@ static void process_etb_gen(struct cmd_parser * restrict me)
     gen_etb(wmam+wsim, wsim, bmam+bsim, bsim);
 }
 
+static void process_etb_load(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    if (!parser_check_eol(lp)) {
+        struct str_with_len str = read_set_value(me, 1);
+        etb_set_dir(str.s, str.len);
+    }
+
+    return etb_load_all();
+}
+
 static void process_etb(struct cmd_parser * restrict me)
 {
     int keyword = read_keyword(me);
@@ -508,6 +521,8 @@ static void process_etb(struct cmd_parser * restrict me)
             return process_etb_info(me);
         case KW_GEN:
             return process_etb_gen(me);
+        case KW_LOAD:
+            return process_etb_load(me);
     }
 
     error(me, "Unexpected keyword in ETB command.");

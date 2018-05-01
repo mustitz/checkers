@@ -225,6 +225,11 @@ void etb_load(
     end[0] = '\0';
 }
 
+void etb_load_all(void)
+{
+    fprintf(stderr, "Not implemented!\n");
+}
+
 void etb_set_dir(const char * dir, const int len)
 {
     if (len >= 1024) {
