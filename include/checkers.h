@@ -341,6 +341,7 @@ struct position_code_info
 
 extern const bitboard_t reverse_table[4][256];
 extern const struct position_code_info position_code_infos[SIDE_BITBOARD_CODE_COUNT][SIDE_BITBOARD_CODE_COUNT];
+extern void * position_code_data[SIDE_BITBOARD_CODE_COUNT][SIDE_BITBOARD_CODE_COUNT];
 
 static inline int bitboard_stat_to_code(const int all_0, const int sim_0)
 {
@@ -357,5 +358,6 @@ uint64_t position_to_index(
 void gen_etb(const int wall, const int wsim, const int ball, const int bsim);
 void etb_set_dir(const char * dir, const int len);
 void etb_info(void);
+void etb_free(void);
 
 #endif

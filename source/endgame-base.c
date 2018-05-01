@@ -12,6 +12,36 @@
 #define SIGNATURE       "ETB Rus Checkers"
 
 char etb_dir[1024] = ".";
+void * position_code_data[SIDE_BITBOARD_CODE_COUNT][SIDE_BITBOARD_CODE_COUNT];
+
+static void set_position_code_data(
+    const int wcode,
+    const int bcode,
+    void * const data)
+{
+    void * const old1 = position_code_data[wcode][bcode];
+    void * const old2 = position_code_data[bcode][wcode];
+
+    if (old1 != old2) {
+        fprintf(stderr, "Warning! position_code_data mismatch for %d %d.\n", wcode, bcode);
+        return;
+    }
+
+    if (old1 != NULL) {
+        free(old1);
+    }
+
+    position_code_data[wcode][bcode] = data;
+    position_code_data[bcode][wcode] = data;
+}
+
+void etb_free(void)
+{
+    for (int wcode = 0; wcode < SIDE_BITBOARD_CODE_COUNT; ++wcode)
+    for (int bcode = wcode; bcode < SIDE_BITBOARD_CODE_COUNT; ++bcode) {
+        set_position_code_data(wcode, bcode, NULL);
+    }
+}
 
 struct etb_header
 {
@@ -669,7 +699,20 @@ static void run_etb_generation(
     }
 
     printf("Generation done, saving...\n");
-    save_etb(info, me->estimations);
+
+    void * data = malloc(info->total);
+    if (data == NULL) {
+        fprintf(stderr, "Cannot allocate ETB data.\n");
+        return;
+    }
+
+    memcpy(data, me->estimations, info->total);
+
+    save_etb(info, data);
+    const int wcode = bitboard_stat_to_code(info->wall, info->wsim);
+    const int bcode = bitboard_stat_to_code(info->ball, info->bsim);
+    set_position_code_data(wcode, bcode, data);
+
     printf("Finished!\n");
 }
 

@@ -541,6 +541,7 @@ int main()
         }
     }
 
+    etb_free();
     game_ai_free(game);
     free_mempool(pool);
 
