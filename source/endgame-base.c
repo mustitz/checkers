@@ -17,6 +17,11 @@ void etb_set_dir(const char * dir, const int len)
     strncpy(etb_dir, dir, len);
 }
 
+void etb_info(void)
+{
+    printf("etb_dir: %s\n", etb_dir);
+}
+
 void read_endgame_tablebase(struct position_code_info * restrict const info, FILE * restrict const f)
 {
     fprintf(stderr, "Warning: read_endgame_tablebase is not implemeted.\n");

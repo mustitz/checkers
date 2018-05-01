@@ -356,5 +356,6 @@ uint64_t position_to_index(
 
 void gen_etb(const int wall, const int wsim, const int ball, const int bsim);
 void etb_set_dir(const char * dir, const int len);
+void etb_info(void);
 
 #endif

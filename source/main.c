@@ -446,7 +446,7 @@ static void process_etb_info(struct cmd_parser * restrict me)
         return error(me, "End of line expected (ETB INFO command is parsed), but someting was found.");
     }
 
-    printf("ETB INFO: Not implemented\n");
+    etb_info();
 }
 
 static void process_etb_gen(struct cmd_parser * restrict me)
