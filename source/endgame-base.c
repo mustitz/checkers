@@ -299,6 +299,7 @@ int index_to_position(
 
 struct gen_etb_context
 {
+    const struct position_code_info * info;
     struct mempool * mempool;
     struct move_ctx * move_ctx;
     int8_t * estimations;
@@ -322,6 +323,20 @@ static inline void grow_moves(
     }
 
     me->last_move = me->current_move + MOVE_INC_SZ / sizeof(me->current_move[0]);
+}
+
+static void print_fen_by_index(
+    const char * const prefix,
+    const uint64_t index,
+    const struct position_code_info * const info)
+{
+    if (prefix != NULL) {
+        printf("%s", prefix);
+    }
+
+    struct position position;
+    index_to_position(&position, info, index);
+    position_print_fen(&position);
 }
 
 static int calc_estimate_and_moves(
@@ -383,7 +398,15 @@ static int calc_estimate_and_moves(
             return 1;
         }
 
-        *current_move++ = position_to_index(answer, info);
+        const uint64_t answer_index = position_to_index(answer, info);
+        *current_move++ = answer_index;
+        if (answer_index >= me->info->total) {
+            fprintf(stderr, "Wrong answer index in %s = %lu for index %lu (total = %lu).\n  ", __FUNCTION__, answer_index, index, me->info->total);
+            print_fen_by_index("", index, me->info);
+            printf("  ");
+            position_print_fen(answer);
+            return -1;
+        }
     }
 
     *current_move++ = U64_OVERFLOW;
@@ -490,6 +513,7 @@ static void gen_etb_via_info(
     };
     struct gen_etb_context * restrict const me = &gen_etb_context;
 
+    me->info = info;
     me->current_move = NULL;
     me->last_move = NULL;
 
