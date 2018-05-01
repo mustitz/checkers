@@ -416,19 +416,146 @@ static int calc_estimate_and_moves(
     return 0;
 }
 
+static int update_position_winning(
+    struct gen_etb_context * restrict const me,
+    int8_t * restrict const estimations,
+    const uint64_t index,
+    int8_t depth)
+{
+    const uint64_t * answer = me->answer_indexes[index];
+    if (*answer == U64_OVERFLOW) {
+        fprintf(stderr, "Wrong move list for position with index %lu.\n  ", index);
+        print_fen_by_index("", index, me->info);
+        return -1;
+    }
+
+    for (;;) {
+
+        const uint64_t answer_index = *answer;
+        if (answer_index >= me->info->total) {
+            fprintf(stderr, "Wrong answer index in %s = %lu for index %lu (total = %lu).\n  ", __FUNCTION__, answer_index, index, me->info->total);
+            print_fen_by_index("", index, me->info);
+            return -1;
+        }
+
+        const int8_t answer_estimation = estimations[answer_index];
+        if (answer_estimation < 0) {
+            estimations[index] = +depth;
+            return 1;
+        }
+
+        if (*++answer == U64_OVERFLOW) {
+            return 0;
+        }
+    }
+}
+
+static int update_position_loosing(
+    struct gen_etb_context * restrict const me,
+    int8_t * restrict const estimations,
+    const uint64_t index,
+    int8_t depth)
+{
+    const uint64_t * answer = me->answer_indexes[index];
+    if (*answer == U64_OVERFLOW) {
+        fprintf(stderr, "Wrong move list for position with index %lu.\n  ", index);
+        print_fen_by_index("", index, me->info);
+        return -1;
+    }
+
+    for (;;) {
+
+        const uint64_t answer_index = *answer;
+        if (answer_index >= me->info->total) {
+            fprintf(stderr, "Wrong answer index in %s = %lu for index %lu (total = %lu).\n  ", __FUNCTION__, answer_index, index, me->info->total);
+            print_fen_by_index("", index, me->info);
+            return -1;
+        }
+
+        const int8_t answer_estimation = estimations[answer_index];
+        if (answer_estimation <= 0) {
+            return 0;
+        }
+
+        if (*++answer == U64_OVERFLOW) {
+            estimations[index] = -depth;
+            return 1;
+        }
+    }
+}
+
 static void run_etb_generation(
     struct gen_etb_context * restrict const me,
     const struct position_code_info * const info)
 {
-    printf("First pass: generate all possible answers.\n");
     for (uint64_t index=0; index<info->total; ++index) {
         const int status = calc_estimate_and_moves(me, info, index);
         if (status != 0) {
             return;
         }
     }
+	printf("Turn 1: all moves are generated, base estimations are done.\n");
 
-    printf("Not implemented yet :)\n");
+    int8_t * restrict const estimations = me->estimations;
+    for (int8_t depth=2;; ++depth) {
+
+        uint64_t loose = 0;
+        uint64_t loose_index = U64_OVERFLOW;
+        for (uint64_t index=0; index<info->total; ++index) {
+            if (estimations[index] != 0) {
+                continue;
+            }
+            const int status = update_position_loosing(me, estimations, index, depth);
+            if (status < 0) {
+                return;
+            }
+            loose += status;
+            if (status != 0) {
+                loose_index = index;
+            }
+         }
+
+        printf("Turn %d: add %lu new estimations (loosing).\n", depth, loose);
+
+        if (loose_index != U64_OVERFLOW) {
+            printf("  index %5lu estimation = %d: ", loose_index, (int)estimations[loose_index]);
+            print_fen_by_index("", loose_index, info);
+        }
+
+        uint64_t win = 0;
+        uint64_t win_index = U64_OVERFLOW;
+        for (uint64_t index=0; index<info->total; ++index) {
+            if (estimations[index] != 0) {
+                continue;
+            }
+            const int status = update_position_winning(me, estimations, index, depth);
+            if (status < 0) {
+                return;
+            }
+            win += status;
+            if (status != 0) {
+                win_index = index;
+            }
+         }
+
+        printf("Turn %d: add %lu new estimations (winning).\n", depth, win);
+
+        if (win_index != U64_OVERFLOW) {
+            printf("  index %5lu estimation = %d: ", win_index, (int)estimations[win_index]);
+            print_fen_by_index("", win_index, info);
+        }
+
+        if (win + loose == 0) {
+            break;
+        }
+
+        if (depth == 127) {
+            fprintf(stderr, "Fatal: maximum depth value exceeded.\n");
+            return;
+        }
+    }
+
+    printf("Finished!\n");
 }
 
 static inline void * gen_etb_alloc(
