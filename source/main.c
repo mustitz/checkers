@@ -448,7 +448,7 @@ static void process_etb_info(struct cmd_parser * restrict me)
         return error(me, "End of line expected (ETB INFO command is parsed), but someting was found.");
     }
 
-    etb_status();
+    game_etb_info(me->game);
 }
 
 static void process_etb_gen(struct cmd_parser * restrict me)

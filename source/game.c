@@ -430,3 +430,94 @@ static void game_set_ai_desc(struct game * restrict me, int i)
 
     me->current_ai = i;
 }
+
+struct etb_move_estimation
+{
+    int8_t estimation;
+    uint8_t num;
+};
+
+static int estimation_order(const int estimation)
+{
+    if (estimation == 0) {
+        return 0;
+    }
+
+    if (estimation < 0) {
+        return -1000 - estimation;
+    }
+
+    if (estimation > 0) {
+        return +1000 - estimation;
+    }
+
+    return +2000;
+}
+
+static int cmp_etb_move_estimation(const void * const ptr_a, const void * const ptr_b)
+{
+    const struct etb_move_estimation * const a = ptr_a;
+    const struct etb_move_estimation * const b = ptr_b;
+
+    const int order_a = estimation_order(a->estimation);
+    const int order_b = estimation_order(b->estimation);
+
+    if (order_a < order_b) return -1;
+    if (order_a > order_b) return +1;
+    if (a->num < b->num) return -1;
+    if (a->num > b->num) return +1;
+    return 0;
+}
+
+static void print_moves_by_estimation(
+    const struct game * const me,
+    const struct etb_move_estimation * const estimations)
+{
+    const int verbose_move_count = me->verbose_move_count;
+    const struct etb_move_estimation * estimation = estimations;
+    const struct etb_move_estimation * const end = estimations + verbose_move_count;
+
+    for (; estimation != end; ++estimation) {
+        const struct verbose_move * const verbose_move = me->verbose_moves + estimation->num;
+        const int len = print_verbose_move(verbose_move, 0);
+        printf(" %*s", 30 - len, "");
+        const int value = estimation->estimation;
+        const unsigned int num = estimation->num + 1;
+        switch (value) {
+            case ETB_NA:
+                printf("N/A       num %2u\n", num);
+                break;
+            case 0:
+                printf("=         num %2u\n", num);
+                break;
+            default:
+                if (value < 0) {
+                    printf("Win %2d    num %2u\n", -value, num);
+                } else {
+                    printf("Loose %2d  num %2u\n", +value, num);
+                }
+        }
+    }
+}
+
+void game_etb_info(struct game * restrict const me)
+{
+    game_gen_moves(me);
+
+    const int verbose_move_count = me->verbose_move_count;
+    const struct verbose_move * verbose_move = me->verbose_moves;
+    const struct position * const answers = me->move_ctx->answers;
+
+    struct etb_move_estimation move_list[verbose_move_count];
+
+    const struct verbose_move * const end = verbose_move + verbose_move_count;
+    uint8_t num = 0;
+    for (; verbose_move != end; ++verbose_move, ++num) {
+        const struct position * const position = answers + verbose_move->index;
+        const int8_t estimation = etb_estimate(position);
+        move_list[num] = (struct etb_move_estimation){ .num = num, .estimation = estimation };
+    }
+
+    qsort(move_list, verbose_move_count, sizeof(move_list[0]), cmp_etb_move_estimation);
+    print_moves_by_estimation(me, move_list);
+}

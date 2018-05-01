@@ -1011,6 +1011,11 @@ void gen_etb(const int wall, const int wsim, const int ball, const int bsim)
     printf("This endgame type is not supported.\n");
 }
 
+int8_t etb_estimate(const struct position * const position)
+{
+    return ETB_NA;
+}
+
 /*
  * Tests
  */

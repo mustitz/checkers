@@ -318,6 +318,7 @@ void game_ai_select(struct game * restrict me);
 void game_ai_free(struct game * restrict me);
 void game_ai_list(struct game * restrict me);
 void game_set_ai(struct game * restrict me, const char * name, int name_len);
+void game_etb_info(struct game * restrict const me);
 
 
 
@@ -328,6 +329,7 @@ void game_set_ai(struct game * restrict me, const char * name, int name_len);
  */
 
 #define SIDE_BITBOARD_CODE_COUNT   90
+#define ETB_NA                   -128
 
 struct position_code_info
 {
@@ -360,5 +362,6 @@ void etb_set_dir(const char * dir, const int len);
 void etb_status(void);
 void etb_free(void);
 void etb_load_all(void);
+int8_t etb_estimate(const struct position * const position);
 
 #endif
