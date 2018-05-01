@@ -135,6 +135,96 @@ static void save_etb(
     end[0] = '\0';
 }
 
+static void etb_load_from_file(
+    const struct position_code_info * const info,
+    FILE * const f)
+{
+    struct etb_header header;
+    const size_t header_sz = sizeof(struct etb_header);
+    const size_t header_was_read = fread(&header, 1, header_sz, f);
+    if (header_was_read != header_sz) {
+        fprintf(stderr, "File read error (header).\n");
+        return;
+    }
+
+    const int cmp = strncmp(header.signature, SIGNATURE, 16);
+    if (cmp != 0) {
+        fprintf(stderr, "Wrong signature\n");
+        return;
+    }
+
+    const int is_ok = 1
+        && header.wsim == info->wsim
+        && header.wmam == info->wmam
+        && header.bsim == info->bsim
+        && header.bmam == info->bmam
+    ;
+
+    if (!is_ok) {
+        fprintf(stderr, "Wrong position stats.\n");
+        return;
+    }
+
+    const int status = fseek(f, header.header_sz, SEEK_SET);
+    if (status != 0) {
+        fprintf(stderr, "fseek fails.\n");
+        return;
+    }
+
+    void * data = malloc(info->total);
+    if (data == NULL) {
+        fprintf(stderr, "Cannot allocate ETB data.\n");
+        return;
+    }
+
+    const size_t was_read = fread(data, 1, info->total, f);
+    if (was_read != info->total) {
+        fprintf(stderr, "Not enought data in file.\n");
+        free(data);
+        return;
+    }
+
+    const int wcode = bitboard_stat_to_code(info->wall, info->wsim);
+    const int bcode = bitboard_stat_to_code(info->ball, info->bsim);
+    set_position_code_data(wcode, bcode, data);
+}
+
+static void etb_load_filepath(
+    const struct position_code_info * const info,
+    const char * const filepath)
+{
+    FILE * const f = fopen(filepath, "rb");
+    if (f == NULL) {
+        fprintf(stderr, "Cannot open file “%s”, errno = %d, %s.\n", filepath, errno, strerror(errno));
+        return;
+    }
+
+    etb_load_from_file(info, f);
+
+    fclose(f);
+}
+
+void etb_load(
+    const struct position_code_info * const info)
+{
+    const size_t etb_dir_len = strlen(etb_dir);
+    char * restrict const end = etb_dir + etb_dir_len;
+    const size_t avail = 1022 - etb_dir_len;
+
+    if (avail <= 16) {
+        fprintf(stderr, "ETB file path len is exceeded.\n");
+        return;
+    }
+
+    end[0] = '/';
+    strncpy(end+1, info->filename, 16);
+    end[17] = '\0';
+
+    etb_load_filepath(info, etb_dir);
+
+    end[0] = '\0';
+}
+
 void etb_set_dir(const char * dir, const int len)
 {
     if (len >= 1024) {
