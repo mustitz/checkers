@@ -5,7 +5,17 @@
 
 #define MOVE_INC_SZ     (1024 * 256)
 
-const char * endgame_dir = ".";
+char etb_dir[1024] = ".";
+
+void etb_set_dir(const char * dir, const int len)
+{
+    if (len >= 1024) {
+        fprintf(stderr, "Path len is exceeded.\n");
+        return;
+    }
+
+    strncpy(etb_dir, dir, len);
+}
 
 void read_endgame_tablebase(struct position_code_info * restrict const info, FILE * restrict const f)
 {

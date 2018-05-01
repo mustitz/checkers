@@ -355,5 +355,6 @@ uint64_t position_to_index(
     const struct position_code_info * const info);
 
 void gen_etb(const int wall, const int wsim, const int ball, const int bsim);
+void etb_set_dir(const char * dir, const int len);
 
 #endif

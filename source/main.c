@@ -15,6 +15,7 @@
 #define KW_ETB              8
 #define KW_INFO             9
 #define KW_GEN             10
+#define KW_ETB_DIR         11
 
 #define ITEM(name) { #name, KW_##name }
 struct keyword_desc root_level_keywords[] = {
@@ -29,6 +30,7 @@ struct keyword_desc root_level_keywords[] = {
     ITEM(ETB),
     ITEM(INFO),
     ITEM(GEN),
+    ITEM(ETB_DIR),
     { NULL, 0 }
 };
 #undef ITEM
@@ -372,6 +374,7 @@ static void process_ai_list(struct cmd_parser * restrict me)
 }
 
 static void process_set_ai(struct cmd_parser * restrict me);
+static void process_set_etb_dir(struct cmd_parser * restrict me);
 
 static void process_set(struct cmd_parser * restrict me)
 {
@@ -388,6 +391,8 @@ static void process_set(struct cmd_parser * restrict me)
     switch (keyword) {
         case KW_AI:
             return process_set_ai(me);
+        case KW_ETB_DIR:
+            return process_set_etb_dir(me);
     }
 
     error(me, "Unexpected keyword in SET command.");
@@ -426,6 +431,12 @@ static void process_set_ai(struct cmd_parser * restrict me)
 {
     struct str_with_len str = read_set_value(me);
     game_set_ai(me->game, str.s, str.len);
+}
+
+static void process_set_etb_dir(struct cmd_parser * restrict me)
+{
+    struct str_with_len str = read_set_value(me);
+    etb_set_dir(str.s, str.len);
 }
 
 static void process_etb_info(struct cmd_parser * restrict me)
