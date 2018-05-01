@@ -404,11 +404,11 @@ struct str_with_len
     int len;
 };
 
-struct str_with_len read_set_value(struct cmd_parser * restrict me)
+struct str_with_len read_set_value(struct cmd_parser * restrict me, const int is_eq_supported)
 {
     struct line_parser * restrict lp = &me->line_parser;
     parser_skip_spaces(lp);
-    if (*lp->current == '=') {
+    if (is_eq_supported && *lp->current == '=') {
         ++lp->current;
         parser_skip_spaces(lp);
     }
@@ -429,13 +429,13 @@ struct str_with_len read_set_value(struct cmd_parser * restrict me)
 
 static void process_set_ai(struct cmd_parser * restrict me)
 {
-    struct str_with_len str = read_set_value(me);
+    struct str_with_len str = read_set_value(me, 1);
     game_set_ai(me->game, str.s, str.len);
 }
 
 static void process_set_etb_dir(struct cmd_parser * restrict me)
 {
-    struct str_with_len str = read_set_value(me);
+    struct str_with_len str = read_set_value(me, 1);
     etb_set_dir(str.s, str.len);
 }
 
