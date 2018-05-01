@@ -393,7 +393,13 @@ static void process_set(struct cmd_parser * restrict me)
     error(me, "Unexpected keyword in SET command.");
 }
 
-static void process_set_ai(struct cmd_parser * restrict me)
+struct str_with_len
+{
+    const char * s;
+    int len;
+};
+
+struct str_with_len read_set_value(struct cmd_parser * restrict me)
 {
     struct line_parser * restrict lp = &me->line_parser;
     parser_skip_spaces(lp);
@@ -411,8 +417,15 @@ static void process_set_ai(struct cmd_parser * restrict me)
         }
     }
 
-    const char * name = (const char *)begin;
-    game_set_ai(me->game, name, end-begin);
+    const char * s = (const char *)begin;
+    const int len = end - begin;
+    return (struct str_with_len){s, len};
+}
+
+static void process_set_ai(struct cmd_parser * restrict me)
+{
+    struct str_with_len str = read_set_value(me);
+    game_set_ai(me->game, str.s, str.len);
 }
 
 static void process_etb_info(struct cmd_parser * restrict me)
