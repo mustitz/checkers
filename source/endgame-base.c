@@ -305,7 +305,7 @@ void etb_set_dir(const char * dir, const int len)
     strncpy(etb_dir, dir, len);
 }
 
-void etb_info(void)
+void etb_status(void)
 {
     printf("etb_dir: %s\n", etb_dir);
 }

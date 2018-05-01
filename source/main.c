@@ -448,7 +448,7 @@ static void process_etb_info(struct cmd_parser * restrict me)
         return error(me, "End of line expected (ETB INFO command is parsed), but someting was found.");
     }
 
-    etb_info();
+    etb_status();
 }
 
 static void process_etb_gen(struct cmd_parser * restrict me)
@@ -506,6 +506,11 @@ static void process_etb_load(struct cmd_parser * restrict me)
 
 static void process_etb(struct cmd_parser * restrict me)
 {
+    struct line_parser * restrict lp = &me->line_parser;
+    if (parser_check_eol(lp)) {
+        return etb_status();
+    }
+
     int keyword = read_keyword(me);
 
     if (keyword == -1) {
