@@ -443,7 +443,7 @@ struct position_with_index position_index_data[] = {
             },
         },
         .index = 2778902,
-        .total = 8068032
+        .total = 2*8068032
     }
 };
 

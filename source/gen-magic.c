@@ -534,14 +534,15 @@ static uint64_t init_position_code_info_offset(
 
     const uint64_t m1 = safe_mul(qsim, qwmam);
     const uint64_t m2 = safe_mul(m1, qbmam);
-    if (m2 == U64_OVERFLOW) {
+    const uint64_t m3 = safe_mul(2, m2);
+    if (m3 == U64_OVERFLOW) {
         fprintf(stderr, "wsim %d, bsim %d, wmam %d, bmam %d:\n", wsim, bsim, wmam, bmam);
-        fprintf(stderr, "  U64 multiplicatation oveflow (total): %lu * %lu * %lu.\n", qsim, qwmam, qbmam);
+        fprintf(stderr, "  U64 multiplicatation oveflow (total): %lu * %lu * %lu * 2.\n", qsim, qwmam, qbmam);
         fprintf(stderr, "Location %s:%d\n", __FILE__, __LINE__);
         exit(1);
     }
 
-    return m2;
+    return m3;
 }
 
 static void init_position_code_info_entry(
