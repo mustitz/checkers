@@ -200,24 +200,29 @@ void game_move_list(struct game * restrict me)
 
 
 
-static void print_verbose_move(const struct verbose_move * verbose_move);
+static int print_verbose_move(const struct verbose_move * verbose_move, const int nl);
 
 static void game_print_verbose_moves(struct game * restrict me)
 {
     for (int i=0; i<me->verbose_move_count; ++i) {
         printf("%d\t", i+1);
-        print_verbose_move(me->verbose_moves + i);
+        print_verbose_move(me->verbose_moves + i, 1);
     }
 }
 
-static void print_verbose_move(const struct verbose_move * verbose_move)
+static int print_verbose_move(const struct verbose_move * verbose_move, const int nl)
 {
+    int result = 2;
     const char * delimeter = verbose_move->is_taking ? ":" : "-";
     printf("%s", lower_index_str(verbose_move->squares[0]));
     for (int i=1; i<verbose_move->len; ++i) {
         printf("%s%s", delimeter, lower_index_str(verbose_move->squares[i]));
+        result += 3;
     }
-    printf("\n");
+    if (nl) {
+        printf("\n");
+    }
+    return result;
 }
 
 void game_move_select(struct game * restrict me, int num)
@@ -373,7 +378,7 @@ void game_ai_select(struct game * restrict me)
         const struct verbose_move * verbose_move = me->verbose_moves + i;
         if (verbose_move->index == num) {
             game_set_position(me, answers + num);
-            print_verbose_move(verbose_move);
+            print_verbose_move(verbose_move, 1);
             return;
         }
     }
