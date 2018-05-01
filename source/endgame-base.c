@@ -381,7 +381,8 @@ uint64_t position_to_index(
     int indexes[12];
     bitboard_t bb_storage[4] ;
 
-    const int is_reversed = info->is_reversed;
+    const struct position_code_info * const info_base = info->base;
+    const int is_reversed = info != info_base;
     const int active = is_reversed ^ position->active;
 
     if (is_reversed) {
@@ -413,13 +414,13 @@ uint64_t position_to_index(
     const uint64_t idx_wosim = cindex(wosim, indexes);
 
     calc_indexes(indexes, bsim_bb, RANK_1 | wosim_bb);
-    const uint64_t idx_bsim = cindex(info->bsim, indexes);
+    const uint64_t idx_bsim = cindex(info_base->bsim, indexes);
 
     calc_indexes(indexes, wmam_bb, bsim_bb | wsim_bb);
-    const uint64_t idx_wmam = cindex(info->wmam, indexes);
+    const uint64_t idx_wmam = cindex(info_base->wmam, indexes);
 
     calc_indexes(indexes, bmam_bb, wall_bb | bsim_bb);
-    const uint64_t idx_bmam = cindex(info->bmam, indexes);
+    const uint64_t idx_bmam = cindex(info_base->bmam, indexes);
 
     const uint64_t wfsim_total = choose[4][wfsim];
     const uint64_t wosim_total = choose[24][wosim];
@@ -429,8 +430,8 @@ uint64_t position_to_index(
     sim_result = sim_result * wfsim_total + idx_wfsim;
     sim_result += info->fr_offsets[wfsim];
 
-    const int free_squares = 32 - info->wsim - info->bsim;
-    const uint64_t wmam_total = choose[free_squares][info->wmam];
+    const int free_squares = 32 - info_base->wsim - info_base->bsim;
+    const uint64_t wmam_total = choose[free_squares][info_base->wmam];
 
     uint64_t mam_result = idx_bmam;
     mam_result = mam_result * wmam_total + idx_wmam;
@@ -520,7 +521,8 @@ int index_to_position(
         return -1;
     }
 
-    const int is_reversed = info->is_reversed;
+    const struct position_code_info * const info_base = info->base;
+    const int is_reversed = info != info_base;
     const int active = (index % 2);
     index /= 2;
 
@@ -534,7 +536,7 @@ int index_to_position(
         + (sim_index >= info->fr_offsets[4])
     ;
 
-    const int wosim = info->wsim - wfsim;
+    const int wosim = info_base->wsim - wfsim;
     sim_index -= info->fr_offsets[wfsim];
 
     const uint64_t wfsim_total = choose[4][wfsim];
@@ -546,31 +548,31 @@ int index_to_position(
     const uint64_t idx_wosim = sim_index % wosim_total;
     const uint64_t idx_bsim = sim_index / wosim_total;
 
-    const int free_squares = 32 - info->wsim - info->bsim;
-    const uint64_t wmam_total = choose[free_squares][info->wmam];
+    const int free_squares = 32 - info_base->wsim - info_base->bsim;
+    const uint64_t wmam_total = choose[free_squares][info_base->wmam];
 
     const uint64_t idx_wmam = mam_index % wmam_total;
     const uint64_t idx_bmam = mam_index / wmam_total;
 
     int wfsim_indexes[wfsim];
     int wosim_indexes[wosim];
-    int bsim_indexes[info->bsim];
-    int wmam_indexes[info->wmam];
-    int bmam_indexes[info->bmam];
+    int bsim_indexes[info_base->bsim];
+    int wmam_indexes[info_base->wmam];
+    int bmam_indexes[info_base->bmam];
 
     cdeindex(wfsim, wfsim_indexes, idx_wfsim);
     cdeindex(wosim, wosim_indexes, idx_wosim);
-    cdeindex(info->bsim, bsim_indexes, idx_bsim);
-    cdeindex(info->wmam, wmam_indexes, idx_wmam);
-    cdeindex(info->bmam, bmam_indexes, idx_bmam);
+    cdeindex(info_base->bsim, bsim_indexes, idx_bsim);
+    cdeindex(info_base->wmam, wmam_indexes, idx_wmam);
+    cdeindex(info_base->bmam, bmam_indexes, idx_bmam);
 
     const bitboard_t wfsim_bb = indexes_to_bitboard(wfsim, wfsim_indexes, BOARD ^ RANK_1);
     const bitboard_t wosim_bb = indexes_to_bitboard(wosim, wosim_indexes, RANK_1 | RANK_8);
-    const bitboard_t bsim_bb = indexes_to_bitboard(info->bsim, bsim_indexes, wosim_bb | RANK_1);
+    const bitboard_t bsim_bb = indexes_to_bitboard(info_base->bsim, bsim_indexes, wosim_bb | RANK_1);
 
     const bitboard_t sim_bb = wfsim_bb | wosim_bb | bsim_bb;
-    const bitboard_t wmam_bb = indexes_to_bitboard(info->wmam, wmam_indexes, sim_bb);
-    const bitboard_t bmam_bb = indexes_to_bitboard(info->bmam, bmam_indexes, sim_bb | wmam_bb);
+    const bitboard_t wmam_bb = indexes_to_bitboard(info_base->wmam, wmam_indexes, sim_bb);
+    const bitboard_t bmam_bb = indexes_to_bitboard(info_base->bmam, bmam_indexes, sim_bb | wmam_bb);
 
     const bitboard_t wsim_bb = wfsim_bb | wosim_bb;
     const bitboard_t wall_bb = wsim_bb | wmam_bb;
@@ -998,22 +1000,29 @@ void gen_etb(const int wall, const int wsim, const int ball, const int bsim)
         return;
     }
 
-    const struct position_code_info * const info1 = &position_code_infos[wcode][bcode];
-    if (!info1->is_reversed) {
-        return gen_etb_via_info(info1);
-    }
-
-    const struct position_code_info * const info2 = &position_code_infos[bcode][wcode];
-    if (!info2->is_reversed) {
-        return gen_etb_via_info(info2);
-    }
-
-    printf("This endgame type is not supported.\n");
+    const struct position_code_info * const info = &position_code_infos[wcode][bcode];
+    return gen_etb_via_info(info->base);
 }
 
 int8_t etb_estimate(const struct position * const position)
 {
-    return ETB_NA;
+    const struct position_code_info * const info = get_position_info(position);
+    if (info == NULL) {
+        return ETB_NA;
+    }
+
+    const int8_t * const data = position_code_data[info->wcode][info->bcode];
+    if (data == NULL) {
+        return ETB_NA;
+    }
+
+    const uint64_t index = position_to_index(position, info);
+    if (index >= info->total) {
+        fprintf(stderr, "Warning! Index %lu out of range (total = %lu).\n", index, info->total);
+        return ETB_NA;
+    }
+
+    return data[index];
 }
 
 /*

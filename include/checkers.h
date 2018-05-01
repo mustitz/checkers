@@ -14,6 +14,14 @@
  * Math
  */
 
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
+#ifndef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
+
 #define U64_OVERFLOW (~(uint64_t)0)
 
 static inline uint64_t safe_mul(const uint64_t a, const uint64_t b)
@@ -333,9 +341,9 @@ void game_etb_info(struct game * restrict const me);
 
 struct position_code_info
 {
-    int has_tablebase;
-    int is_reversed;
-    int wall, wsim, wmam, ball, bsim, bmam;
+    const struct position_code_info * base;
+    int wcode, wall, wsim, wmam;
+    int bcode, ball, bsim, bmam;
     char filename[16];
     uint64_t fr_offsets[6];
     uint64_t total;

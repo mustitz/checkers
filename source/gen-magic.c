@@ -494,10 +494,12 @@ static void init_reverse_table(void)
 static uint64_t init_position_code_info_offset(
     struct position_code_info * restrict const info)
 {
-    const int wsim = info->wsim;
-    const int bsim = info->bsim;
-    const int wmam = info->wmam;
-    const int bmam = info->bmam;
+    const int is_reversed = info->wcode < info->bcode;
+
+    const int wsim = !is_reversed ? info->wsim : info->bsim;
+    const int bsim = !is_reversed ? info->bsim : info->wsim;
+    const int wmam = !is_reversed ? info->wmam : info->bmam;
+    const int bmam = !is_reversed ? info->bmam : info->wmam;
 
     uint64_t * restrict offsets = info->fr_offsets;
     const uint64_t * const begin = offsets + 1;
@@ -565,22 +567,14 @@ static void init_position_code_info_entry(
 
     const int is_reversed = wcode < bcode;
 
-    info->is_reversed = is_reversed;
-    if (!is_reversed) {
-        info->wall = wall;
-        info->wsim = wsim;
-        info->wmam = wmam;
-        info->ball = ball;
-        info->bsim = bsim;
-        info->bmam = bmam;
-    } else {
-        info->wall = ball;
-        info->wsim = bsim;
-        info->wmam = bmam;
-        info->ball = wall;
-        info->bsim = wsim;
-        info->bmam = wmam;
-    }
+    info->wall = wall;
+    info->wsim = wsim;
+    info->wmam = wmam;
+    info->ball = ball;
+    info->bsim = bsim;
+    info->bmam = bmam;
+    info->wcode = wcode;
+    info->bcode = bcode;
 
     info->total = init_position_code_info_offset(info);
 
@@ -776,9 +770,11 @@ static void print_file(void)
         printf("    {\n");
         for (int j=0; j<SIDE_BITBOARD_CODE_COUNT; ++j) {
             const struct position_code_info * const info = &tables.position_code_infos[i][j];
-            printf("        { %d, %d, %2d, %2d, %2d, %2d, %2d, %2d, \"%s\", { %*lu, %*lu, %*lu, %*lu, %*lu, %*lu }, %*lu }%s\n",
-                info->has_tablebase, info->is_reversed,
-                info->wall, info->wsim, info->wmam, info->ball, info->bsim, info->bmam,
+            printf("        { &position_code_infos[%2d][%2d], %2d, %2d, %2d, %2d, %2d, %2d, %2d, %2d, \"%s\", { %*lu, %*lu, %*lu, %*lu, %*lu, %*lu }, %*lu }%s\n",
+                MAX(info->wcode, info->bcode),
+                MIN(info->wcode, info->bcode),
+                info->wcode, info->wall, info->wsim, info->wmam,
+                info->bcode, info->ball, info->bsim, info->bmam,
                 info->filename,
                 1, info->fr_offsets[0],
                 13, info->fr_offsets[1],
