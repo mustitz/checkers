@@ -310,11 +310,6 @@ void etb_status(void)
     printf("etb_dir: %s\n", etb_dir);
 }
 
-void read_endgame_tablebase(struct position_code_info * restrict const info, FILE * restrict const f)
-{
-    fprintf(stderr, "Warning: read_endgame_tablebase is not implemeted.\n");
-}
-
 static inline int calc_code_and_check(const int all, const int sim, const char * const name)
 {
     const int code = bitboard_stat_to_code(all, sim);
