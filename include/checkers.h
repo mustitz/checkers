@@ -358,9 +358,6 @@ static inline int bitboard_stat_to_code(const int all_0, const int sim_0)
     return ( all_0 * (all_0+3) - 2 * (sim_0+1) ) >> 1;
 }
 
-const struct position_code_info * position_to_code(
-    const struct position * const position);
-
 uint64_t position_to_index(
     const struct position * const position,
     const struct position_code_info * const info);
@@ -371,5 +368,6 @@ void etb_status(void);
 void etb_free(void);
 void etb_load_all(void);
 int8_t etb_estimate(const struct position * const position);
+void etb_index(const struct position * const position);
 
 #endif

@@ -17,6 +17,7 @@
 #define KW_GEN             10
 #define KW_ETB_DIR         11
 #define KW_LOAD            12
+#define KW_INDEX           13
 
 #define ITEM(name) { #name, KW_##name }
 struct keyword_desc root_level_keywords[] = {
@@ -33,6 +34,7 @@ struct keyword_desc root_level_keywords[] = {
     ITEM(GEN),
     ITEM(ETB_DIR),
     ITEM(LOAD),
+    ITEM(INDEX),
     { NULL, 0 }
 };
 #undef ITEM
@@ -504,6 +506,16 @@ static void process_etb_load(struct cmd_parser * restrict me)
     return etb_load_all();
 }
 
+static void process_etb_index(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    if (!parser_check_eol(lp)) {
+        return error(me, "ETB INDEX: End of line expected, but something was found..");
+    }
+
+    etb_index(me->game->position);
+}
+
 static void process_etb(struct cmd_parser * restrict me)
 {
     struct line_parser * restrict lp = &me->line_parser;
@@ -528,6 +540,8 @@ static void process_etb(struct cmd_parser * restrict me)
             return process_etb_gen(me);
         case KW_LOAD:
             return process_etb_load(me);
+        case KW_INDEX:
+            return process_etb_index(me);
     }
 
     error(me, "Unexpected keyword in ETB command.");

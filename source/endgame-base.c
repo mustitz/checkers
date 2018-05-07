@@ -1025,6 +1025,16 @@ int8_t etb_estimate(const struct position * const position)
     return data[index];
 }
 
+void etb_index(const struct position * const position)
+{
+    const struct position_code_info * const info = get_position_info(position);
+    uint64_t index = position_to_index(position, info);
+    if (index == U64_OVERFLOW) {
+        printf("N/A\n");
+    }
+    printf("%lu\n", index);
+}
+
 /*
  * Tests
  */
