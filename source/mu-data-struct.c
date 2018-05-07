@@ -79,10 +79,14 @@ void * mempool_alloc(struct mempool * restrict me, size_t size)
 
         me->gap += me->last->avail;
 
-        size_t item_size = me->allocated;
-        size_t min_size = 16 * sizeof(struct mempool_item);
+        static const size_t max_size = 1024 * 1024 * 16;
+        size_t item_size = me->allocated > max_size ? max_size : me->allocated;
+        size_t min_size = 16 * sizeof(struct mempool_item) + size;
         if (item_size < min_size) {
             item_size = min_size;
+        }
+        if (item_size < min_size) {
+            item_size = 2 * min_size;
         }
 
         struct mempool_item * new_item = malloc(item_size);
