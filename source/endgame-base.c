@@ -679,8 +679,8 @@ static int calc_estimate_and_moves(
 
     const struct position * const end = ctx->answers + answer_count;
     const struct position * answer = ctx->answers;
-    const struct move * move = ctx->moves;
-    for (; answer != end; ++answer, ++move) {
+    int force_draw = 0;
+    for (; answer != end; ++answer) {
         const bitboard_t future_enemy_bb = answer->bitboards[IDX_ALL + enemy];
         if (future_enemy_bb == 0) {
             *estimation = +1;
@@ -690,23 +690,42 @@ static int calc_estimate_and_moves(
 
         const bitboard_t sim_bb = answer->bitboards[IDX_SIM + our];
         if (current_enemy_bb != future_enemy_bb || qcurrent_sim != pop_count(sim_bb)) {
-            /* TODO */ fprintf(stderr, "Info from lower endgames is not implemented!\n");
-            printf("Current position: current_enemy_bb = 0x%08X, qcurrent_sim = %d, ", current_enemy_bb, qcurrent_sim);
-            position_print_fen(position);
-            printf("Future position: future_enemy_bb = 0x%08X, sim_bb = 0x%08X, pop_count(sim_bb) = %d, ", future_enemy_bb, sim_bb, pop_count(sim_bb));
-            position_print_fen(answer);
-            return 1;
+            int8_t answer_estimation = etb_estimate(answer);
+            if (answer_estimation == ETB_NA) {
+                fprintf(stderr, "Info from lower endgames is not found!\n");
+                printf("Current position: current_enemy_bb = 0x%08X, qcurrent_sim = %d, ", current_enemy_bb, qcurrent_sim);
+                position_print_fen(position);
+                printf("Future position: future_enemy_bb = 0x%08X, sim_bb = 0x%08X, pop_count(sim_bb) = %d, ", future_enemy_bb, sim_bb, pop_count(sim_bb));
+                position_print_fen(answer);
+                return 1;
+            }
+            if (answer_estimation < 0) {
+                *estimation = +1;
+                *answer_index = NULL;
+                return 0;
+            }
+            if (answer_estimation == 0 && force_draw == 0) {
+                force_draw = 1;
+                *current_move++ = info->total;
+            }
+            continue;
         }
 
         const uint64_t answer_index = position_to_index(answer, info);
         *current_move++ = answer_index;
-        if (answer_index >= me->info->total) {
+        if (answer_index > me->info->total) {
             fprintf(stderr, "Wrong answer index in %s = %lu for index %lu (total = %lu).\n  ", __FUNCTION__, answer_index, index, me->info->total);
             print_fen_by_index("", index, me->info);
             printf("  ");
             position_print_fen(answer);
             return -1;
         }
+    }
+
+    if (current_move == me->current_move) {
+        *estimation = -1;
+        *answer_index = NULL;
+        return 0;
     }
 
     *current_move++ = U64_OVERFLOW;
@@ -732,7 +751,7 @@ static int update_position_winning(
     for (;;) {
 
         const uint64_t answer_index = *answer;
-        if (answer_index >= me->info->total) {
+        if (answer_index > me->info->total) {
             fprintf(stderr, "Wrong answer index in %s = %lu for index %lu (total = %lu).\n  ", __FUNCTION__, answer_index, index, me->info->total);
             print_fen_by_index("", index, me->info);
             return -1;
@@ -766,7 +785,7 @@ static int update_position_loosing(
     for (;;) {
 
         const uint64_t answer_index = *answer;
-        if (answer_index >= me->info->total) {
+        if (answer_index > me->info->total) {
             fprintf(stderr, "Wrong answer index in %s = %lu for index %lu (total = %lu).\n  ", __FUNCTION__, answer_index, index, me->info->total);
             print_fen_by_index("", index, me->info);
             return -1;
@@ -898,11 +917,12 @@ static int alloc_gen_etb_context(
         return 1;
     }
 
-    const size_t estimations_sz = info->total * sizeof(me->estimations[0]);
+    const size_t estimations_sz = (info->total + 1) * sizeof(me->estimations[0]);
     me->estimations = gen_etb_alloc(me, estimations_sz, "estimations array");
     if (me->estimations == NULL) {
         return 1;
     }
+    me->estimations[info->total] = 0;
 
     const size_t answer_indexes_sz = info->total * sizeof(me->answer_indexes[0]);
     me->answer_indexes = gen_etb_alloc(me, answer_indexes_sz, "answer indexes array");
