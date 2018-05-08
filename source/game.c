@@ -14,6 +14,7 @@ struct ai_desc
 struct ai_desc ai_list[] = {
     { "robust", &create_robust_ai },
     { "random", &create_random_ai },
+    { "mcts", &create_mcts_ai },
     { NULL, NULL }
 };
 

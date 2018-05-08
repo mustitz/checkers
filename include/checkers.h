@@ -284,6 +284,7 @@ struct ai
 
 struct ai * create_random_ai(void);
 struct ai * create_robust_ai(void);
+struct ai * create_mcts_ai(void);
 
 static inline void ai_set_position(
     struct ai * restrict const me,
