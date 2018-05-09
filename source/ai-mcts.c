@@ -7,6 +7,7 @@ struct mcts_ai
 {
     struct ai base;
     struct mempool * pool;
+    struct move_ctx * move_ctx;
 };
 
 struct mcts_ai * get_mcts_ai(struct ai * const me)
@@ -75,6 +76,20 @@ void mcts_ai_free(struct ai * restrict ai)
     free_mempool(me->pool);
 }
 
+static inline void * alloc(
+    struct mcts_ai * restrict const me,
+    const size_t sz,
+    const char * const title)
+{
+    struct mempool * restrict const mempool = me->pool;
+    mempool_align(mempool, 256);
+    void * restrict const result = mempool_alloc(mempool, sz);
+    if (result == NULL) {
+        fprintf(stderr, "MCTS AI: Fail to allocate %s from mempool, %lu bytes are required.\n", title, sz);
+    }
+    return result;
+}
+
 struct ai * create_mcts_ai(void)
 {
     struct mempool * const pool = create_mempool(1024);
@@ -95,6 +110,34 @@ struct ai * create_mcts_ai(void)
     me->base.set_position = mcts_ai_set_position;
     me->base.do_move = mcts_ai_do_move;
     me->base.free = mcts_ai_free;
+
+    const size_t move_ctx_sz = sizeof(struct move_ctx);
+    me->move_ctx = alloc(me, move_ctx_sz, "move context");
+    if (me->move_ctx == NULL) {
+        free_mempool(pool);
+        return NULL;
+    }
+
+    const size_t buf_taking_sz = BUF_SIZE__TAKING * sizeof(struct taking);
+
+    me->move_ctx->sim_taking = alloc(me, buf_taking_sz, "taking buffer for simples");
+    if (me->move_ctx->sim_taking == NULL) {
+        free_mempool(pool);
+        return NULL;
+    }
+
+    me->move_ctx->mam_taking = alloc(me, buf_taking_sz, "taking buffer for mams");
+    if (me->move_ctx->mam_taking == NULL) {
+        free_mempool(pool);
+        return NULL;
+    }
+
+    const size_t answers_sz = BUF_SIZE__ANSWERS * sizeof(struct position);
+    me->move_ctx->answers = alloc(me, answers_sz, "answers array");
+    if (me->move_ctx->answers == NULL) {
+        free_mempool(pool);
+        return NULL;
+    }
 
     return &me->base;
 }
