@@ -17,8 +17,33 @@ struct mcts_ai * get_mcts_ai(struct ai * const me)
 
 static int rollout(struct mcts_ai * restrict const me, const struct position * const position)
 {
-    /* TODO: Not implemented */
-    return 0;
+    const int active = position->active;
+
+    struct move_ctx * restrict const ctx = me->move_ctx;
+    ctx->position = position;
+
+    for (;;) {
+        const int8_t etb_estimation = etb_estimate(position);
+        if (etb_estimation != ETB_NA) {
+            if (etb_estimation == 0) {
+                return 0;
+            }
+            const int is_win = (etb_estimation < 0) ^ (ctx->position->active == active);
+            return is_win ? +1 : -1;
+        }
+
+        gen_moves(ctx);
+
+        const int answer_count = ctx->answer_count;
+        if (answer_count == 0) {
+            const int is_win = ctx->position->active != active;
+            return is_win ? +1 : -1;
+        }
+
+        const int i = rand() % answer_count;
+        const struct position position_storage = ctx->answers[i];
+        ctx->position = &position_storage;
+    }
 }
 
 static int do_move(struct mcts_ai * restrict const me, struct move_ctx * restrict const move_ctx)
