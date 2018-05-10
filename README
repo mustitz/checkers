@@ -1,0 +1,7 @@
+Endgame Table Base file for Russian Draught (checkers) till to 6 pieces.
+
+Github restriction is 100 MB per binary file,
+so separate bz2 for each position type is provided.
+
+To extract all run:
+    for i in *.bz2; do tar -xjf $i; done
