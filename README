@@ -5,7 +5,132 @@ about a position.
 To install application try following commands:
     ./configure
     make
+    make check
     sudo make install
 
 To install from GIT repository tun before
     autoreconf -vis
+
+Now it includes some stupid engines for play and endgame tablebase generator (DTC metric).
+
+Supported commands are:
+  exit or quit                     - Exit from console
+  move list                        - List of all possible moves
+  move select “N”                  - Perform N-th move from the list (move list)
+  fen                              - Show position alphanumeric FEN (http://pdn.fmjd.org/fen.html)
+  fen “fenstr”                     - Set fen
+  ai list                          - List of supported AIs (asterix marks current one)
+  ai select                        - Ask AI to move
+  set param [=] “value”            - Set some parameters
+    Now supported:
+      ai                               - AI as engine
+      etb_dir                          - Directory for Endgame Table Base
+  etb info                         - Show moves and DTC estimation
+  etb index                        - Print position index in the Endgame Table Base
+  etb load “dir”                   - Load tablebases from directory and update etb_dir.
+  etb gen “postiontypestr”         - Generate endgame for given position type
+    “positiontype” is a [wWbB] where w, b - black and white simples, W, B - black and white mam,
+                   for example, “wwWB” is a position with two white simples, one white mam and one black mam.
+
+Simple session is:
+
+> set etb_dir /home/proger
+> etb gen WB
+Generating endgame 0+1 vs 0+1.
+Turn 1: all moves are generated, base estimations are done.
+Turn 2: add 4 new estimations (loosing).
+  index  1025 estimation = -2: B:WKa1:BKh8
+Turn 2: add 24 new estimations (winning).
+  index  1763 estimation = 2: B:WKh8:BKe5
+Turn 3: add 0 new estimations (loosing).
+Turn 3: add 0 new estimations (winning).
+Generation done, saving...
+Finished!
+> etb gen WWB
+Generating endgame 0+2 vs 0+1.
+Turn 1: all moves are generated, base estimations are done.
+Turn 2: add 70 new estimations (loosing).
+  index 29417 estimation = -2: B:WKa7,Kh2:BKb8
+Turn 2: add 914 new estimations (winning).
+  index 29696 estimation = 2: W:WKc7,Kd6:BKb8
+...........................................................
+Turn 6: add 0 new estimations (loosing).
+Turn 6: add 0 new estimations (winning).
+Generation done, saving...
+Finished!
+> etb gen WWWB
+Generating endgame 0+3 vs 0+1.
+Turn 1: all moves are generated, base estimations are done.
+Turn 2: add 1156 new estimations (loosing).
+  index 285873 estimation = -2: B:WKa7,Kd6,Ke5:BKb8
+Turn 2: add 22644 new estimations (winning).
+  index 287676 estimation = 2: W:WKb8,Kc7,Ke5:BKd6
+...........................................................
+Turn 12: add 868 new estimations (winning).
+  index 279022 estimation = 12: W:WKa5,Kd8,Ke1:BKb8
+Turn 13: add 194 new estimations (loosing).
+  index 278593 estimation = -13: B:WKb2,Kc3,Kg7:BKb8
+Turn 13: add 0 new estimations (winning).
+Turn 14: add 0 new estimations (loosing).
+Turn 14: add 0 new estimations (winning).
+Generation done, saving...
+Finished!
+> fen W:WKa5,Kd8,Ke1:BKb8
+> etb info
+a5-c3                          Win 12    num  3
+d8-f6                          Win 12    num  9
+e1-c3                          Win 12    num 13
+a5-b4                          =         num  1
+a5-b6                          =         num  2
+a5-c7                          =         num  4
+a5-d2                          =         num  5
+d8-b6                          =         num  6
+d8-c7                          =         num  7
+d8-e7                          =         num  8
+d8-g5                          =         num 10
+d8-h4                          =         num 11
+e1-b4                          =         num 12
+e1-d2                          =         num 14
+e1-f2                          =         num 15
+e1-g3                          =         num 16
+e1-h4                          =         num 17
+> move select 13
+> fen
+B:WKa5,Kc3,Kd8:BKb8
+> etb info
+b8-a7                          Loose 11  num  1
+b8-d6                          Loose 11  num  3
+b8-f4                          Loose 11  num  5
+b8-g3                          Loose 11  num  6
+b8-h2                          Loose 11  num  7
+b8-c7                          Loose  1  num  2
+b8-e5                          Loose  1  num  4
+> ai list
+ robust
+ random
+> set ai robust
+> ai list
+*robust
+ random
+> ai select
+b8-a7
+> move list
+1	a5-b4
+2	a5-b6
+3	a5-c7
+4	c3-a1
+5	c3-b2
+6	c3-b4
+7	c3-d2
+8	c3-d4
+9	c3-e1
+10	c3-e5
+11	c3-f6
+12	c3-g7
+13	c3-h8
+14	d8-b6
+15	d8-c7
+16	d8-e7
+17	d8-f6
+18	d8-g5
+19	d8-h4
