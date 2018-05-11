@@ -412,6 +412,18 @@ static void process_ai_list(struct cmd_parser * restrict me)
     }
 }
 
+static int read_ai_param(
+    struct line_parser * restrict lp,
+    const struct keyword_tracker * const params)
+{
+    if (params == NULL) {
+        unsigned char ch = *lp->current;
+        return is_first_id_char(ch) ? 0 : -1;
+    }
+
+    return parser_read_keyword(lp, params);
+}
+
 static void process_ai_set(struct cmd_parser * restrict me)
 {
     struct game * restrict const game = me->game;
@@ -420,7 +432,24 @@ static void process_ai_set(struct cmd_parser * restrict me)
         return error(me, "No AI selected.");
     }
 
-    error(me, "Not implemented.");
+    const struct keyword_tracker * const params = ai_get_supported_param(ai);
+    struct line_parser * restrict lp = &me->line_parser;
+    if (parser_check_eol(lp)) {
+        return error(me, "AI SET parameter expected, but EOL found.");
+    }
+
+    const int param_id = read_ai_param(lp, params);
+    switch (param_id) {
+        case -1:
+            return error(me, "AI SET Invalid lexem.");
+        case 0:
+            return error(me, "AI SET Invalid param.");
+        default:
+            break;
+    }
+
+    struct str_with_len str = read_set_value(me, 1);
+    printf("Not implemented: set param with index %d to “%*.*s”.\n", param_id, str.len, str.len, str.s);
 }
 
 static void process_set_ai(struct cmd_parser * restrict me);
