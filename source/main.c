@@ -88,6 +88,38 @@ static int read_keyword(struct cmd_parser * restrict me)
 }
 
 
+
+struct str_with_len
+{
+    const char * s;
+    int len;
+};
+
+struct str_with_len read_set_value(struct cmd_parser * restrict me, const int is_eq_supported)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    parser_skip_spaces(lp);
+    if (is_eq_supported && *lp->current == '=') {
+        ++lp->current;
+        parser_skip_spaces(lp);
+    }
+
+    const unsigned char * begin = lp->current;
+    const unsigned char * end = lp->current;
+
+    for (; *lp->current != '\0'; ++lp->current) {
+        if (*lp->current > ' ') {
+            end = lp->current + 1;
+        }
+    }
+
+    const char * s = (const char *)begin;
+    const int len = end - begin;
+    return (struct str_with_len){s, len};
+}
+
+
+
 static int process_quit(struct cmd_parser * restrict me);
 static void process_move(struct cmd_parser * restrict me);
 static void process_fen(struct cmd_parser * restrict me);
@@ -414,35 +446,6 @@ static void process_set(struct cmd_parser * restrict me)
     }
 
     error(me, "Unexpected keyword in SET command.");
-}
-
-struct str_with_len
-{
-    const char * s;
-    int len;
-};
-
-struct str_with_len read_set_value(struct cmd_parser * restrict me, const int is_eq_supported)
-{
-    struct line_parser * restrict lp = &me->line_parser;
-    parser_skip_spaces(lp);
-    if (is_eq_supported && *lp->current == '=') {
-        ++lp->current;
-        parser_skip_spaces(lp);
-    }
-
-    const unsigned char * begin = lp->current;
-    const unsigned char * end = lp->current;
-
-    for (; *lp->current != '\0'; ++lp->current) {
-        if (*lp->current > ' ') {
-            end = lp->current + 1;
-        }
-    }
-
-    const char * s = (const char *)begin;
-    const int len = end - begin;
-    return (struct str_with_len){s, len};
 }
 
 static void process_set_ai(struct cmd_parser * restrict me)
