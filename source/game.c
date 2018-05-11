@@ -344,14 +344,24 @@ void game_set_position(struct game * restrict me, const struct position * positi
     me->verbose_move_count = -1;
 }
 
-void game_ai_select(struct game * restrict me)
+struct ai * get_game_ai(struct game * restrict const me)
 {
     if (me->ai == NULL) {
         me->ai = create_ai();
         if (me->ai == NULL) {
             printf("Error: can not create AI object, create_ai returns NULL.\n");
-            return;
+            return NULL;
         }
+    }
+
+    return me->ai;
+}
+
+void game_ai_select(struct game * restrict me)
+{
+    struct ai * restrict const ai = get_game_ai(me);
+    if (ai == NULL) {
+        return;
     }
 
     game_gen_moves(me);
@@ -365,7 +375,7 @@ void game_ai_select(struct game * restrict me)
     }
 
     struct position * restrict answers = move_ctx->answers;
-    int num = ai_do_move(me->ai, move_ctx);
+    int num = ai_do_move(ai, move_ctx);
     move_ctx->answer_count = answer_count;
     move_ctx->answers = answers;
 

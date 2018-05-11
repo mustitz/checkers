@@ -322,6 +322,7 @@ void game_move_list(struct game * restrict me);
 void game_move_select(struct game * restrict me, int num);
 void game_print_fen(const struct game * me);
 void game_set_position(struct game * restrict me, const struct position * position);
+struct ai * get_game_ai(struct game * restrict const me);
 void game_ai_select(struct game * restrict me);
 void game_ai_free(struct game * restrict me);
 void game_ai_list(struct game * restrict me);
