@@ -267,6 +267,7 @@ struct ai
 {
     void (*set_position)(struct ai * restrict me, const struct position * position);
     int (*do_move)(struct ai * restrict me, struct move_ctx * restrict move_ctx);
+    const struct keyword_tracker * (*get_supported_param)(const struct ai * const ai);
     void (*free)(struct ai * restrict me);
 };
 
@@ -286,6 +287,11 @@ static inline int ai_do_move(struct ai * restrict me, struct move_ctx * restrict
 static inline void ai_free(struct ai * restrict me)
 {
     return me->free(me);
+}
+
+static inline const struct keyword_tracker * ai_get_supported_param(const struct ai * const me)
+{
+    return me->get_supported_param(me);
 }
 
 #define create_ai create_robust_ai

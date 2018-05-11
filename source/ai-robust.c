@@ -1,4 +1,5 @@
 #include "checkers.h"
+#include "mu-parser.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,6 +9,17 @@
 #define BUF_SIZE                      1024
 #define MAX_ESTIMATION              100000
 #define MIN_ESTIMATION     -MAX_ESTIMATION
+
+#define PARAM_DEPTH       1
+#define PARAM_USE_ETB     2
+
+#define ITEM(name) { #name, PARAM_##name }
+struct keyword_desc robust_params[] = {
+    ITEM(DEPTH),
+    ITEM(USE_ETB),
+    { NULL, 0 }
+};
+#undef ITEM
 
 static unsigned long int next = 1;
 
@@ -27,13 +39,20 @@ struct robust_ai
 {
     struct ai base;
     struct mempool * pool;
-    int depth;
     struct position * buf;
+    struct keyword_tracker * params;
+
+    int depth;
 };
 
 struct robust_ai * get_robust_ai(struct ai * me)
 {
     return move_ptr(me, -offsetof(struct robust_ai, base));
+}
+
+const struct robust_ai * cget_robust_ai(const struct ai * const me)
+{
+    return move_cptr(me, -offsetof(struct robust_ai, base));
 }
 
 void robust_ai_set_position(struct ai * restrict me, const struct position * position)
@@ -150,6 +169,12 @@ int robust_ai_do_move(struct ai * restrict ai, struct move_ctx * restrict move_c
     return best_move;
 }
 
+const struct keyword_tracker * robust_ai_get_supported_param(const struct ai * const ai)
+{
+    const struct robust_ai * const me = cget_robust_ai(ai);
+    return me->params;
+}
+
 void robust_ai_free(struct ai * restrict ai)
 {
     struct robust_ai * restrict me = get_robust_ai(ai);
@@ -184,10 +209,18 @@ struct ai * create_robust_ai()
         return NULL;
     }
 
+    me->params = build_keyword_tracker(robust_params, pool, KW_TRACKER__IGNORE_CASE);
+    if (me->params == NULL) {
+        printf("Error: build_keyword_tracker(...) failed.\n");
+        free_mempool(pool);
+        return NULL;
+    }
+
     me->pool = pool;
     me->buf = buf;
     me->base.set_position = robust_ai_set_position;
     me->base.do_move = robust_ai_do_move;
+    me->base.get_supported_param = robust_ai_get_supported_param;
     me->base.free = robust_ai_free;
 
     me->depth = DEFAULT_DEPTH;

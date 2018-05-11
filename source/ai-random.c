@@ -14,6 +14,11 @@ struct random_ai * get_random_ai(struct ai * me)
     return move_ptr(me, -offsetof(struct random_ai, base));
 }
 
+const struct random_ai * cget_random_ai(const struct ai * const me)
+{
+    return move_cptr(me, -offsetof(struct random_ai, base));
+}
+
 void random_ai_set_position(struct ai * restrict me, const struct position * position)
 {
 }
@@ -26,6 +31,11 @@ int random_ai_do_move(struct ai * restrict me, struct move_ctx * restrict move_c
     }
 
     return rand() % move_ctx->answer_count;
+}
+
+const struct keyword_tracker * random_ai_get_supported_param(const struct ai * const ai)
+{
+    return NULL;
 }
 
 void random_ai_free(struct ai * restrict ai)
@@ -52,6 +62,7 @@ struct ai * create_random_ai(void)
     me->pool = pool;
     me->base.set_position = random_ai_set_position;
     me->base.do_move = random_ai_do_move;
+    me->base.get_supported_param = random_ai_get_supported_param;
     me->base.free = random_ai_free;
 
     return &me->base;

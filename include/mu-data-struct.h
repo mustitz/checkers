@@ -50,6 +50,12 @@ static inline void * move_ptr(void * ptr, ptrdiff_t delta)
     return tmp + delta;
 }
 
+static inline const void * move_cptr(const void * const ptr, ptrdiff_t delta)
+{
+    const char * const tmp = ptr;
+    return tmp + delta;
+}
+
 static inline ptrdiff_t sub_ptr(const void * a, const void * b)
 {
     const char * tmp_a = a;
