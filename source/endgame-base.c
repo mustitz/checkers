@@ -297,12 +297,13 @@ void etb_load_all(void)
 
 void etb_set_dir(const char * dir, const int len)
 {
-    if (len >= 1024) {
+    if (len > 1023) {
         fprintf(stderr, "Path len is exceeded.\n");
         return;
     }
 
     strncpy(etb_dir, dir, len);
+    etb_dir[len] = '\0';
 }
 
 void etb_status(void)
