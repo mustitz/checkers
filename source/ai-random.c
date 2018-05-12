@@ -36,16 +36,69 @@ void random_ai_set_position(
 {
 }
 
+static inline int estimate(
+    const struct random_ai * const me,
+    const struct position * const position)
+{
+    const bitboard_t * const bitboards = position->bitboards;
+    const bitboard_t all = bitboards[IDX_ALL_0] | bitboards[IDX_ALL_1];
+    if (pop_count(all) > me->use_etb) {
+        return 0;
+    }
+
+    int8_t etb_estimation = etb_estimate(position);
+    if (etb_estimation == ETB_NA) {
+        return 0;
+    }
+
+    if (etb_estimation < 0) {
+        return 1000 + etb_estimation;
+    }
+
+    if (etb_estimation > 0) {
+        return -1000 + etb_estimation;
+    }
+
+    return 0;
+}
+
 int random_ai_do_move(
-    struct ai * restrict const me,
+    struct ai * restrict const ai,
     struct move_ctx * restrict const move_ctx)
 {
+    struct random_ai * restrict const me = get_random_ai(ai);
+
     if (move_ctx->answer_count == 0) {
         printf("Internal error: call random_ai_do_move with move_ctx->answer_count = 0.\n");
         return -1;
     }
 
-    return rand() % move_ctx->answer_count;
+    const struct position * const answers = move_ctx->answers;
+    const int answer_count = move_ctx->answer_count;
+    if (answer_count == 1) {
+        return 0;
+    }
+
+    int best_indexes[answer_count];
+    int qbest = 0;
+
+    int best_estimation = -1000;
+    for (int i=0; i<answer_count; ++i) {
+        const struct position * const answer = answers + i;
+        const int estimation = estimate(me, answer);
+        if (estimation < best_estimation) {
+            continue;
+        }
+        if (estimation == best_estimation) {
+            best_indexes[qbest++] = i;
+            continue;
+        }
+        qbest = 1;
+        best_indexes[0] = i;
+        best_estimation = estimation;
+    }
+
+    return best_indexes[rand() % qbest];
 }
 
 const struct keyword_tracker * random_ai_get_supported_param(
