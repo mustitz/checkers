@@ -1,5 +1,4 @@
 #include "checkers.h"
-#include "mu-parser.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -427,7 +426,7 @@ static int read_ai_param(
 static void process_ai_set(struct cmd_parser * restrict me)
 {
     struct game * restrict const game = me->game;
-    const struct ai * const ai = get_game_ai(game);
+    struct ai * const ai = get_game_ai(game);
     if (ai == NULL) {
         return error(me, "No AI selected.");
     }
@@ -448,8 +447,8 @@ static void process_ai_set(struct cmd_parser * restrict me)
             break;
     }
 
-    struct str_with_len str = read_set_value(me, 1);
-    printf("Not implemented: set param with index %d to “%*.*s”.\n", param_id, str.len, str.len, str.s);
+    parser_skip_spaces(lp);
+    ai_set_param(ai, param_id, lp);
 }
 
 static void process_set_ai(struct cmd_parser * restrict me);

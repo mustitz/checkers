@@ -1,5 +1,4 @@
 #include "checkers.h"
-#include "mu-parser.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -175,6 +174,14 @@ const struct keyword_tracker * robust_ai_get_supported_param(const struct ai * c
     return me->params;
 }
 
+static inline void robust_ai_set_param(
+    struct ai * restrict const me,
+    const int param_id,
+    struct line_parser * restrict const lp)
+{
+    printf("Robust AI set param %d to “%s”.\n", param_id, lp->current);
+}
+
 void robust_ai_free(struct ai * restrict ai)
 {
     struct robust_ai * restrict me = get_robust_ai(ai);
@@ -221,6 +228,7 @@ struct ai * create_robust_ai()
     me->base.set_position = robust_ai_set_position;
     me->base.do_move = robust_ai_do_move;
     me->base.get_supported_param = robust_ai_get_supported_param;
+    me->base.set_param = robust_ai_set_param;
     me->base.free = robust_ai_free;
 
     me->depth = DEFAULT_DEPTH;

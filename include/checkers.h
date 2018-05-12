@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "mu-data-struct.h"
+#include "mu-parser.h"
 
 
 
@@ -265,33 +266,56 @@ void position_print_fen(const struct position * position);
 
 struct ai
 {
-    void (*set_position)(struct ai * restrict me, const struct position * position);
-    int (*do_move)(struct ai * restrict me, struct move_ctx * restrict move_ctx);
-    const struct keyword_tracker * (*get_supported_param)(const struct ai * const ai);
+    void (*set_position)(
+        struct ai * restrict const me,
+        const struct position * const position);
+    int (*do_move)(
+        struct ai * restrict const me,
+        struct move_ctx * restrict const move_ctx);
+    const struct keyword_tracker * (*get_supported_param)(
+        const struct ai * const ai);
+    void (*set_param)(
+        struct ai * restrict const me,
+        const int param_id,
+        struct line_parser * restrict const lp);
     void (*free)(struct ai * restrict me);
 };
 
 struct ai * create_random_ai(void);
 struct ai * create_robust_ai(void);
 
-static inline void ai_set_position(struct ai * restrict me, const struct position * position)
+static inline void ai_set_position(
+    struct ai * restrict const me,
+    const struct position * const position)
 {
     return me->set_position(me, position);
 }
 
-static inline int ai_do_move(struct ai * restrict me, struct move_ctx * restrict move_ctx)
+static inline int ai_do_move(
+    struct ai * restrict me,
+    struct move_ctx * restrict const move_ctx)
 {
     return me->do_move(me, move_ctx);
 }
 
+static inline const struct keyword_tracker * ai_get_supported_param(
+    const struct ai * const me)
+{
+    return me->get_supported_param(me);
+}
+
+static inline void ai_set_param(
+    struct ai * restrict const me,
+    const int param_id,
+    struct line_parser * restrict const lp)
+{
+    me->set_param(me, param_id, lp);
+}
+
+
 static inline void ai_free(struct ai * restrict me)
 {
     return me->free(me);
-}
-
-static inline const struct keyword_tracker * ai_get_supported_param(const struct ai * const me)
-{
-    return me->get_supported_param(me);
 }
 
 #define create_ai create_robust_ai

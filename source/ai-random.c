@@ -19,11 +19,15 @@ const struct random_ai * cget_random_ai(const struct ai * const me)
     return move_cptr(me, -offsetof(struct random_ai, base));
 }
 
-void random_ai_set_position(struct ai * restrict me, const struct position * position)
+void random_ai_set_position(
+    struct ai * restrict const me,
+    const struct position * const position)
 {
 }
 
-int random_ai_do_move(struct ai * restrict me, struct move_ctx * restrict move_ctx)
+int random_ai_do_move(
+    struct ai * restrict const me,
+    struct move_ctx * restrict const move_ctx)
 {
     if (move_ctx->answer_count == 0) {
         printf("Internal error: call random_ai_do_move with move_ctx->answer_count = 0.\n");
@@ -33,7 +37,8 @@ int random_ai_do_move(struct ai * restrict me, struct move_ctx * restrict move_c
     return rand() % move_ctx->answer_count;
 }
 
-const struct keyword_tracker * random_ai_get_supported_param(const struct ai * const ai)
+const struct keyword_tracker * random_ai_get_supported_param(
+    const struct ai * const ai)
 {
     return NULL;
 }
@@ -63,6 +68,7 @@ struct ai * create_random_ai(void)
     me->base.set_position = random_ai_set_position;
     me->base.do_move = random_ai_do_move;
     me->base.get_supported_param = random_ai_get_supported_param;
+    me->base.set_param = NULL;
     me->base.free = random_ai_free;
 
     return &me->base;
