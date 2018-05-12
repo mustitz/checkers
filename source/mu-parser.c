@@ -182,6 +182,26 @@ int parser_try_int(struct line_parser * restrict me, int * value)
     }
 }
 
+int parser_read_last_int(
+    struct line_parser * restrict const me,
+    int * restrict value)
+{
+    parser_skip_spaces(me);
+
+    int result;
+    const int err = parser_try_int(me, &result);
+    if (err != 0) {
+        return err;
+    }
+
+    if (!parser_check_eol(me)) {
+        return PARSER_ERROR__NO_EOL;
+    }
+
+    *value = result;
+    return 0;
+}
+
 int parser_read_keyword(struct line_parser * restrict me, const struct keyword_tracker * tracker)
 {
     const struct keyword_tracker_step * step = tracker->first_step;

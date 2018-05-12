@@ -223,21 +223,20 @@ static void process_move_list(struct cmd_parser * restrict me)
 
 static void process_move_select(struct cmd_parser * restrict me)
 {
+    int num;
     struct line_parser * restrict lp = &me->line_parser;
     parser_skip_spaces(lp);
 
-    int num;
-    int err = parser_try_int(lp, &num);
-    if (err != 0) {
-        return error(me, "Integer constant expected.");
+    int status = parser_read_last_int(lp, &num);
+    if (status != 0) {
+        if (status != PARSER_ERROR__NO_EOL) {
+            return error(me, "Integer constant expected.");
+        } else {
+            return error(me, "End of line expected (MOVE SELECT n is parser), but something was found.");
+        }
     }
 
-    if (parser_check_eol(lp)) {
-        game_move_select(me->game, num);
-    } else {
-        error(me, "End of line expected (MOVE SELECT n is parser), but something was found.");
-    }
-
+    game_move_select(me->game, num);
 }
 
 static int parse_fen(struct cmd_parser * restrict me, struct position * restrict position);
