@@ -54,6 +54,30 @@ const struct robust_ai * cget_robust_ai(const struct ai * const me)
     return move_cptr(me, -offsetof(struct robust_ai, base));
 }
 
+typedef void (* set_param_func)(
+    struct robust_ai * restrict const me,
+    struct line_parser * restrict const lp);
+
+static void set_depth(
+    struct robust_ai * restrict const me,
+    struct line_parser * restrict const lp)
+{
+    printf("Not implemented: set depth %s\n", lp->current);
+}
+
+static void set_use_etb(
+    struct robust_ai * restrict const me,
+    struct line_parser * restrict const lp)
+{
+    printf("Not implemented: set etb_base %s\n", lp->current);
+}
+
+static const set_param_func set_param_handlers[] = {
+    [PARAM_DEPTH] = set_depth,
+    [PARAM_USE_ETB] = set_use_etb,
+    [0] = NULL
+};
+
 void robust_ai_set_position(struct ai * restrict me, const struct position * position)
 {
 }
@@ -175,11 +199,18 @@ const struct keyword_tracker * robust_ai_get_supported_param(const struct ai * c
 }
 
 static inline void robust_ai_set_param(
-    struct ai * restrict const me,
+    struct ai * restrict const ai,
     const int param_id,
     struct line_parser * restrict const lp)
 {
-    printf("Robust AI set param %d to “%s”.\n", param_id, lp->current);
+    struct robust_ai * restrict const me = get_robust_ai(ai);
+    static const int handler_len = sizeof(set_param_handlers) / sizeof(set_param_handlers[0]);
+    if (param_id <= 0 || param_id >= handler_len) {
+        fprintf(stderr, "Error, param with id = %d is not supported. The valid range is from 1 to %d.\n", param_id, handler_len - 1);
+        return;
+    }
+
+    set_param_handlers[param_id](me, lp);
 }
 
 void robust_ai_free(struct ai * restrict ai)
