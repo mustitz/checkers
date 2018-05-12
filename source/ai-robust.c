@@ -42,6 +42,7 @@ struct robust_ai
     struct keyword_tracker * params;
 
     int depth;
+    int use_etb;
 };
 
 struct robust_ai * get_robust_ai(struct ai * me)
@@ -54,6 +55,21 @@ const struct robust_ai * cget_robust_ai(const struct ai * const me)
     return move_cptr(me, -offsetof(struct robust_ai, base));
 }
 
+static void ai_param_fail(
+    struct line_parser * restrict const lp,
+    const int status,
+    const char * const what)
+{
+    if (status == PARSER_ERROR__NO_EOL) {
+        printf("End of lne expected in “%s n”, but something is found.\n", what);
+    } else {
+        printf("Integer value is expected in “%s”.\n", what);
+    }
+
+    int offset = lp->lexem_start - lp->line;
+    printf("> %s> %*s^\n", lp->line, offset, "");
+}
+
 typedef void (* set_param_func)(
     struct robust_ai * restrict const me,
     struct line_parser * restrict const lp);
@@ -62,14 +78,38 @@ static void set_depth(
     struct robust_ai * restrict const me,
     struct line_parser * restrict const lp)
 {
-    printf("Not implemented: set depth %s\n", lp->current);
+    int depth;
+    int status = parser_read_last_int(lp, &depth);
+
+    if (status != 0) {
+        return ai_param_fail(lp, status, "AI SET DEPTH");
+    }
+
+    if (depth <= 0) {
+        printf("Wrong DEPTH value %d. It should be greater then zero.\n", depth);
+        return;
+    }
+
+    me->depth = depth;
 }
 
 static void set_use_etb(
     struct robust_ai * restrict const me,
     struct line_parser * restrict const lp)
 {
-    printf("Not implemented: set etb_base %s\n", lp->current);
+    int use_etb;
+    int status = parser_read_last_int(lp, &use_etb);
+
+    if (status != 0) {
+        return ai_param_fail(lp, status, "AI SET USE_ETB");
+    }
+
+    if (use_etb < 0 || use_etb > 12) {
+        printf("Wrong USE_ETB value %d. It should be in range from 0 to 12.\n", use_etb);
+        return;
+    }
+
+    me->use_etb = use_etb;
 }
 
 static const set_param_func set_param_handlers[] = {
@@ -263,6 +303,7 @@ struct ai * create_robust_ai()
     me->base.free = robust_ai_free;
 
     me->depth = DEFAULT_DEPTH;
+    me->use_etb = 0;
 
     return &me->base;
 }
