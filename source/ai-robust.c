@@ -6,7 +6,7 @@
 
 #define DEFAULT_DEPTH                   32
 #define BUF_SIZE                      1024
-#define MAX_ESTIMATION              100000
+#define MAX_ESTIMATION            10000000
 #define MIN_ESTIMATION     -MAX_ESTIMATION
 
 #define PARAM_DEPTH       1
@@ -135,7 +135,43 @@ int game_mam_factor[4][4] = {
     { 88, 66, 66, 33 }
 };
 
-static int estimate(const struct position * position)
+static inline int lookup_etb(
+    struct robust_ai * restrict const me,
+    const struct position * const position,
+    const int current_depth,
+    int * restrict estimation)
+{
+    const bitboard_t * const bitboards = position->bitboards;
+    const bitboard_t all = bitboards[IDX_ALL_0] | bitboards[IDX_ALL_1];
+
+    if (pop_count(all) > me->use_etb) {
+        return 1;
+    }
+
+    int8_t etb_estimation = etb_estimate(position);
+    if (etb_estimation == ETB_NA) {
+        return 1;
+    }
+
+    if (etb_estimation == 0) {
+        *estimation = 0;
+        return 0;
+    }
+
+    const int etb_delta = 1000*etb_estimation;
+    const int depth_delta = 10*current_depth;
+    if (etb_estimation > 0) {
+        *estimation = MAX_ESTIMATION - etb_delta - depth_delta;
+    } else {
+        *estimation = MIN_ESTIMATION - etb_delta + depth_delta;
+    }
+    return 0;
+}
+
+static int estimate(
+    struct robust_ai * restrict const me,
+    int current_depth,
+    const struct position * position)
 {
     bitboard_t my_all = position->bitboards[IDX_ALL_0 ^ position->active];
     bitboard_t op_all = position->bitboards[IDX_ALL_1 ^ position->active];
@@ -172,8 +208,14 @@ static int estimate(const struct position * position)
 static int recursive_estimate(struct robust_ai * restrict me, struct move_ctx * restrict move_ctx, const struct position * position)
 {
     int current_depth = move_ctx->answers - me->buf;
+
+    int etb_estimation;
+    if (lookup_etb(me, position, current_depth, &etb_estimation) == 0) {
+        return etb_estimation;
+    }
+
     if (current_depth > me->depth) {
-        return estimate(position);
+        return estimate(me, current_depth, position);
     }
 
     move_ctx->position = position;
@@ -206,7 +248,7 @@ int robust_ai_do_move(struct ai * restrict ai, struct move_ctx * restrict move_c
     const struct position * answers = move_ctx->answers;
 
     if (answer_count == 0) {
-        printf("Internal error: call random_ai_do_move with move_ctx->answer_count = 0.\n");
+        printf("Internal error: call robust_ai_do_move with move_ctx->answer_count = 0.\n");
         return -1;
     }
 
