@@ -140,11 +140,62 @@ def initProcess(cmd, player):
 
     return p, getId(p)
 
+def runGame(p1, p2):
+    global options
+    moveCount = 1
+    fen = 'W:Wa1,a3,b2,c1,c3,d2,e1,e3,f2,g1,g3,h2:Ba7,b6,b8,c7,d6,d8,e7,f6,f8,g7,h6,h8'
+    execute(p1, 'fen ' + fen)
+    execute(p2, 'fen ' + fen)
+
+    game = []
+
+    while True:
+        moves = execute(p1, 'move list')
+        if not moves:
+            return game, -1
+
+        game.append(str(moveCount) + '.')
+
+        move_indexes = {}
+        for move in moves:
+            parts = move.split()
+            move_indexes[parts[1]] = parts[0]
+
+        move = execute(p1, 'ai select')[0]
+        game.append(move)
+
+        execute(p2, 'move select ' + move_indexes[move])
+
+        moves = execute(p2, 'move list')
+        if not moves:
+            return game, +1
+
+        move_indexes = {}
+        for move in moves:
+            parts = move.split()
+            move_indexes[parts[1]] = parts[0]
+
+        move = execute(p2, 'ai select')[0]
+        game.append(move)
+
+        execute(p1, 'move select ' + move_indexes[move])
+
+        moveCount = moveCount + 1
+        if moveCount > options.max_moves:
+            return game, 0
+
 p1, id1 = initProcess(rusCheckers, player1)
 print("Player1:", id1)
 
 p2, id2 = initProcess(rusCheckers, player2)
 print("Player2:", id2)
+
+game, result = runGame(p1, p2)
+win = result == 1
+loose = result == -1
+draw = result == 0
+print('+%d -%d =%d 1s/move 1s/move ELO 0' % (win, loose, draw))
+print(" ".join(game))
 
 close(p1)
 close(p2)
