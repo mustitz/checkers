@@ -365,6 +365,7 @@ static int parse_fen(struct cmd_parser * restrict me, struct position * restrict
 static void process_ai_select(struct cmd_parser * restrict me);
 static void process_ai_list(struct cmd_parser * restrict me);
 static void process_ai_set(struct cmd_parser * restrict me);
+static void process_ai_info(struct cmd_parser * restrict me);
 
 static void process_ai(struct cmd_parser * restrict me)
 {
@@ -385,6 +386,8 @@ static void process_ai(struct cmd_parser * restrict me)
             return process_ai_list(me);
         case KW_SET:
             return process_ai_set(me);
+        case KW_INFO:
+            return process_ai_info(me);
     }
 
     error(me, "Unexpected keyword in AI command.");
@@ -448,6 +451,22 @@ static void process_ai_set(struct cmd_parser * restrict me)
 
     parser_skip_spaces(lp);
     ai_set_param(ai, param_id, lp);
+}
+
+static void process_ai_info(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    if (!parser_check_eol(lp)) {
+        error(me, "End of line expected (AI INFO command is parsed), but something was found.");
+    }
+
+    struct game * restrict const game = me->game;
+    struct ai * const ai = get_game_ai(game);
+    if (ai == NULL) {
+        return error(me, "No AI selected.");
+    }
+
+    ai_info(ai);
 }
 
 static void process_set_ai(struct cmd_parser * restrict me);

@@ -166,6 +166,23 @@ static inline void random_ai_set_param(
     set_param_handlers[param_id](me, lp);
 }
 
+extern const char * const AI_RANDOM_HASH;
+void random_ai_info(const struct ai * const ai)
+{
+    const struct random_ai * const me = cget_random_ai(ai);
+    static const int len = 10;
+
+    printf("%*s %*.*s", len, "id", 8, 8, AI_RANDOM_HASH);
+    if (me->use_etb != 0) {
+        printf("-etb%d", me->use_etb);
+    }
+    printf("\n");
+
+    printf("%*s %d\n", len, "use_etb", me->use_etb);
+    printf("%*s %s\n", len, "hash", AI_RANDOM_HASH);
+
+}
+
 void random_ai_free(struct ai * restrict ai)
 {
     struct random_ai * restrict me = get_random_ai(ai);
@@ -199,6 +216,7 @@ struct ai * create_random_ai(void)
     me->base.do_move = random_ai_do_move;
     me->base.get_supported_param = random_ai_get_supported_param;
     me->base.set_param = random_ai_set_param;
+    me->base.info = random_ai_info;
     me->base.free = random_ai_free;
 
     me->use_etb = 0;

@@ -278,6 +278,7 @@ struct ai
         struct ai * restrict const me,
         const int param_id,
         struct line_parser * restrict const lp);
+    void (*info)(const struct ai * const me);
     void (*free)(struct ai * restrict me);
 };
 
@@ -312,6 +313,10 @@ static inline void ai_set_param(
     me->set_param(me, param_id, lp);
 }
 
+static inline void ai_info(const struct ai * const me)
+{
+    return me->info(me);
+}
 
 static inline void ai_free(struct ai * restrict me)
 {

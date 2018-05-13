@@ -295,6 +295,25 @@ static inline void robust_ai_set_param(
     set_param_handlers[param_id](me, lp);
 }
 
+extern const char * const AI_ROBUST_HASH;
+void robust_ai_info(const struct ai * const ai)
+{
+    const struct robust_ai * const me = cget_robust_ai(ai);
+    static const int len = 10;
+
+    printf("%*s %*.*s", len, "id", 8, 8, AI_ROBUST_HASH);
+    printf("-d%d", me->depth);
+    if (me->use_etb != 0) {
+        printf("-etb%d", me->use_etb);
+    }
+    printf("\n");
+
+    printf("%*s %d\n", len, "depth", me->depth);
+    printf("%*s %d\n", len, "use_etb", me->use_etb);
+    printf("%*s %s\n", len, "hash", AI_ROBUST_HASH);
+
+}
+
 void robust_ai_free(struct ai * restrict ai)
 {
     struct robust_ai * restrict me = get_robust_ai(ai);
@@ -342,6 +361,7 @@ struct ai * create_robust_ai()
     me->base.do_move = robust_ai_do_move;
     me->base.get_supported_param = robust_ai_get_supported_param;
     me->base.set_param = robust_ai_set_param;
+    me->base.info = robust_ai_info;
     me->base.free = robust_ai_free;
 
     me->depth = DEFAULT_DEPTH;
