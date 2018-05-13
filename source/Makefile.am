@@ -22,5 +22,5 @@ EXTRA_DIST = inc.gen-moves.c
 magic-tables.c : gen-magic
 	./gen-magic > magic-tables.c
 
-ai-hashes.c: ai-random.c ai-robust.c ai.awk
-	sha512sum ai-random.c ai-robust.c | awk -f ai.awk > ai-hashes.c
+ai-hashes.c: ai-random.c ai-robust.c ai-mcts.c ai.awk
+	sha512sum ai-random.c ai-robust.c ai-mcts.c | awk -f ai.awk > ai-hashes.c

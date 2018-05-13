@@ -180,7 +180,6 @@ void random_ai_info(const struct ai * const ai)
 
     printf("%*s %d\n", len, "use_etb", me->use_etb);
     printf("%*s %s\n", len, "hash", AI_RANDOM_HASH);
-
 }
 
 void random_ai_free(struct ai * restrict ai)
