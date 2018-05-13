@@ -184,18 +184,35 @@ def runGame(p1, p2):
         if moveCount > options.max_moves:
             return game, 0
 
+def multiGames(p1, p2, count):
+    win = 0
+    draw = 0
+    loose = 0
+
+    games = []
+
+    for i in range(1, count+1):
+        if i % 2 == 1:
+            game, result = runGame(p1, p2)
+        else:
+            game, result = runGame(p2, p1)
+            result = -result
+        win += result == +1
+        loose += result == -1
+        draw += result == 0
+        games.append(" ".join(game))
+
+    return games, win, loose, draw
+
 p1, id1 = initProcess(rusCheckers, player1)
 print("Player1:", id1)
 
 p2, id2 = initProcess(rusCheckers, player2)
 print("Player2:", id2)
 
-game, result = runGame(p1, p2)
-win = result == 1
-loose = result == -1
-draw = result == 0
+games, win, loose, draw = multiGames(p1, p2, options.count)
+print("\n\n".join(games))
 print('+%d -%d =%d 1s/move 1s/move ELO 0' % (win, loose, draw))
-print(" ".join(game))
 
 close(p1)
 close(p2)
