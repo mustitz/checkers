@@ -17,6 +17,7 @@
 #define KW_ETB_DIR         11
 #define KW_LOAD            12
 #define KW_INDEX           13
+#define KW_PING            14
 
 #define ITEM(name) { #name, KW_##name }
 struct keyword_desc root_level_keywords[] = {
@@ -34,6 +35,7 @@ struct keyword_desc root_level_keywords[] = {
     ITEM(ETB_DIR),
     ITEM(LOAD),
     ITEM(INDEX),
+    ITEM(PING),
     { NULL, 0 }
 };
 #undef ITEM
@@ -166,6 +168,11 @@ static int process_cmd(struct cmd_parser * restrict me, const char * cmd)
             break;
         case KW_ETB:
             process_etb(me);
+            break;
+        case KW_PING:
+            printf("pong\n");
+            fflush(stdout);
+            fflush(stderr);
             break;
         default:
             error(me, "Unexpected keyword at the begginning of the line.");
