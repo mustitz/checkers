@@ -10,7 +10,7 @@ EXTRA_CFLAGS = -Ofast
 endif
 
 rus_checkers_CFLAGS = $(EXTRA_CFLAGS) -I${srcdir}/../include
-rus_checkers_SOURCES = main.c gen-moves.c game.c mu-data-struct.c mu-parser.c ai-random.c ai-robust.c endgame-base.c
+rus_checkers_SOURCES = main.c gen-moves.c game.c mu-data-struct.c mu-parser.c ai-random.c ai-robust.c endgame-base.c ai-hashes.c
 nodist_rus_checkers_SOURCES = magic-tables.c
 
 gen_magic_CFLAGS = $(EXTRA_CFLAGS) -I${srcdir}/../include
@@ -21,3 +21,6 @@ EXTRA_DIST = inc.gen-moves.c
 
 magic-tables.c : gen-magic
 	./gen-magic > magic-tables.c
+
+ai-hashes.c: ai-random.c ai-robust.c ai.awk
+	sha512sum ai-random.c ai-robust.c | awk -f ai.awk > ai-hashes.c

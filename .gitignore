@@ -31,6 +31,7 @@ Makefile.in
 /source/rus-checkers
 /source/gen-magic
 /source/magic-tables.c
+/source/ai-hashes.c
 
 /validation/insider
 /validation/validation.sh
