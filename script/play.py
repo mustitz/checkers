@@ -184,23 +184,38 @@ def runGame(p1, p2):
         if moveCount > options.max_moves:
             return game, 0
 
-def multiGames(p1, p2, count):
+def multiGames(p1, id1, p2, id2, count):
     win = 0
     draw = 0
     loose = 0
 
     games = []
+    result_dict = { -1: "0-2", 0: "1-1", +1: "2-0" }
 
     for i in range(1, count+1):
-        if i % 2 == 1:
+        pdn = []
+        is_swap = (id1 != id2) and (i % 2 == 0)
+        if not is_swap:
+            pdn.append('[White "%s"]' % id1)
+            pdn.append('[Black "%s"]' % id2)
             game, result = runGame(p1, p2)
+            result_str = result_dict[result]
+            pdn.append('[Result "%s"]' % result_str)
+            game.append(result_str)
         else:
+            pdn.append('[White "%s"]' % id2)
+            pdn.append('[Black "%s"]' % id1)
             game, result = runGame(p2, p1)
+            result_str = result_dict[result]
+            pdn.append('[Result "%s"]' % result_str)
+            game.append(result_str)
             result = -result
         win += result == +1
         loose += result == -1
         draw += result == 0
-        games.append(" ".join(game))
+        pdn.append('')
+        pdn.append(" ".join(game))
+        games.append("\n".join(pdn))
 
     return games, win, loose, draw
 
@@ -210,8 +225,12 @@ print("Player1:", id1)
 p2, id2 = initProcess(rusCheckers, player2)
 print("Player2:", id2)
 
-games, win, loose, draw = multiGames(p1, p2, options.count)
-print("\n\n".join(games))
+games, win, loose, draw = multiGames(p1, id1, p2, id2, options.count)
+if options.log:
+    logFile = open(options.log, 'w')
+    logFile.write("\n\n\n".join(games))
+    logFile.close()
+
 print('+%d -%d =%d 1s/move 1s/move ELO 0' % (win, loose, draw))
 
 close(p1)
