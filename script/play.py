@@ -4,6 +4,7 @@ import configargparse
 import os
 import select
 import subprocess
+import time
 
 parserArgs = {
     'add_config_file_help': False,
@@ -140,7 +141,22 @@ def initProcess(cmd, player):
 
     return p, getId(p)
 
-def runGame(p1, p2):
+class MoveStats:
+    def __init__(self):
+        self.move_count = 0
+        self.time = 0.0
+
+    def add_move(self, time):
+        self.move_count = self.move_count + 1
+        self.time += time
+
+    def value(self):
+        if self.move_count == 0:
+            return 'N/A'
+        value = self.time / self.move_count
+        return "%.6fs/mv" % value
+
+def runGame(p1, moveStats1, p2, moveStats2):
     global options
     moveCount = 1
     fen = 'W:Wa1,a3,b2,c1,c3,d2,e1,e3,f2,g1,g3,h2:Ba7,b6,b8,c7,d6,d8,e7,f6,f8,g7,h6,h8'
@@ -152,7 +168,7 @@ def runGame(p1, p2):
     while True:
         moves = execute(p1, 'move list')
         if not moves:
-            return game, -1
+            return game, -1,
 
         game.append(str(moveCount) + '.')
 
@@ -161,7 +177,11 @@ def runGame(p1, p2):
             parts = move.split()
             move_indexes[parts[1]] = parts[0]
 
+        start = time.time()
         move = execute(p1, 'ai select')[0]
+        end = time.time()
+
+        moveStats1.add_move(end - start)
         game.append(move)
 
         execute(p2, 'move select ' + move_indexes[move])
@@ -175,7 +195,11 @@ def runGame(p1, p2):
             parts = move.split()
             move_indexes[parts[1]] = parts[0]
 
+        start = time.time()
         move = execute(p2, 'ai select')[0]
+        end = time.time()
+
+        moveStats2.add_move(end - start)
         game.append(move)
 
         execute(p1, 'move select ' + move_indexes[move])
@@ -189,6 +213,9 @@ def multiGames(p1, id1, p2, id2, count):
     draw = 0
     loose = 0
 
+    moveStats1 = MoveStats()
+    moveStats2 = MoveStats()
+
     games = []
     result_dict = { -1: "0-2", 0: "1-1", +1: "2-0" }
 
@@ -198,14 +225,14 @@ def multiGames(p1, id1, p2, id2, count):
         if not is_swap:
             pdn.append('[White "%s"]' % id1)
             pdn.append('[Black "%s"]' % id2)
-            game, result = runGame(p1, p2)
+            game, result = runGame(p1, moveStats1, p2, moveStats2)
             result_str = result_dict[result]
             pdn.append('[Result "%s"]' % result_str)
             game.append(result_str)
         else:
             pdn.append('[White "%s"]' % id2)
             pdn.append('[Black "%s"]' % id1)
-            game, result = runGame(p2, p1)
+            game, result = runGame(p2, moveStats2, p1, moveStats1)
             result_str = result_dict[result]
             pdn.append('[Result "%s"]' % result_str)
             game.append(result_str)
@@ -217,7 +244,7 @@ def multiGames(p1, id1, p2, id2, count):
         pdn.append(" ".join(game))
         games.append("\n".join(pdn))
 
-    return games, win, loose, draw
+    return games, win, loose, draw, moveStats1, moveStats2
 
 p1, id1 = initProcess(rusCheckers, player1)
 print("Player1:", id1)
@@ -225,16 +252,17 @@ print("Player1:", id1)
 p2, id2 = initProcess(rusCheckers, player2)
 print("Player2:", id2)
 
-games, win, loose, draw = multiGames(p1, id1, p2, id2, options.count)
+games, win, loose, draw, ms1, ms2 = multiGames(p1, id1, p2, id2, options.count)
 if options.log:
     logFile = open(options.log, 'w')
     logFile.write("\n\n\n".join(games))
     logFile.close()
 
-print('+%d -%d =%d 1s/move 1s/move ELO 0' % (win, loose, draw))
+args = win, loose, draw, ms1.value(), ms2.value()
+print('+%d -%d =%d %s %s ELO 0' % args)
 
 close(p1)
 close(p2)
 
 #Planned output
-#id1 id2 +win -loose =draw 0.001s/move 0.1s/move ELO +/-500
+#id1 id2 +win -loose =draw 0.001s/mv 0.1s/mv ELO +/-500
