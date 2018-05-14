@@ -39,13 +39,18 @@ static int rollout(struct mcts_ai * restrict const me, const struct position * c
     ctx->position = position;
 
     for (;;) {
-        const int8_t etb_estimation = etb_estimate(position);
-        if (etb_estimation != ETB_NA) {
-            if (etb_estimation == 0) {
-                return 0;
+        const bitboard_t * const bitboards = position->bitboards;
+        const bitboard_t all = bitboards[IDX_ALL_0] | bitboards[IDX_ALL_1];
+
+        if (pop_count(all) <= me->use_etb) {
+            const int8_t etb_estimation = etb_estimate(position);
+            if (etb_estimation != ETB_NA) {
+                if (etb_estimation == 0) {
+                    return 0;
+                }
+                const int is_win = (etb_estimation < 0) ^ (ctx->position->active == active);
+                return is_win ? +1 : -1;
             }
-            const int is_win = (etb_estimation < 0) ^ (ctx->position->active == active);
-            return is_win ? +1 : -1;
         }
 
         gen_moves(ctx);
