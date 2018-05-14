@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import configargparse
+import math
 import os
 import select
 import subprocess
@@ -258,11 +259,28 @@ if options.log:
     logFile.write("\n\n\n".join(games))
     logFile.close()
 
-args = win, loose, draw, ms1.value(), ms2.value()
-print('+%d -%d =%d %s %s ELO 0' % args)
+isSmashing = False
+if (loose == 0) and (draw == 0):
+    isSmashing = True
+    elo = '+INF'
+if (win == 0) and (draw == 0):
+    isSmahing = True
+    elo = '-INF'
+if not isSmashing:
+    result1 = (win + 0.5*draw) / (win + draw + loose)
+    delta = 400 * math.log10(result1/(1-result1))
+    if delta == 0:
+        elo = "0"
+    else:
+        if delta > 0.0:
+            sign = '+'
+        if delta < 0.0:
+            sign = '-'
+            delta = -delta
+        elo = sign + "%.2f" % delta
+
+args = win, loose, draw, ms1.value(), ms2.value(), elo
+print('+%d -%d =%d %s %s ELO %s' % args)
 
 close(p1)
 close(p2)
-
-#Planned output
-#id1 id2 +win -loose =draw 0.001s/mv 0.1s/mv ELO +/-500
