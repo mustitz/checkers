@@ -160,7 +160,7 @@ static void info(const struct mcts_ai * const me)
 {
     static const int len = 10;
 
-    printf("%*s %*.*s", len, "id", 8, 8, AI_MCTS_HASH);
+    printf("%*s mcts-%*.*s", len, "id", 8, 8, AI_MCTS_HASH);
     if (me->use_etb != 0) {
         printf("-etb%d", me->use_etb);
     }

@@ -301,7 +301,7 @@ void robust_ai_info(const struct ai * const ai)
     const struct robust_ai * const me = cget_robust_ai(ai);
     static const int len = 10;
 
-    printf("%*s %*.*s", len, "id", 8, 8, AI_ROBUST_HASH);
+    printf("%*s robust-%*.*s", len, "id", 8, 8, AI_ROBUST_HASH);
     printf("-d%d", me->depth);
     if (me->use_etb != 0) {
         printf("-etb%d", me->use_etb);

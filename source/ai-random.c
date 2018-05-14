@@ -172,7 +172,7 @@ void random_ai_info(const struct ai * const ai)
     const struct random_ai * const me = cget_random_ai(ai);
     static const int len = 10;
 
-    printf("%*s %*.*s", len, "id", 8, 8, AI_RANDOM_HASH);
+    printf("%*s random-%*.*s", len, "id", 8, 8, AI_RANDOM_HASH);
     if (me->use_etb != 0) {
         printf("-etb%d", me->use_etb);
     }
