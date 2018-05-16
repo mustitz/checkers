@@ -4,13 +4,17 @@
 #include <stdlib.h>
 
 #define PARAM_USE_ETB     1
+#define PARAM_MAX_MOVES   2
 
 #define ITEM(name) { #name, PARAM_##name }
 struct keyword_desc mcts_params[] = {
     ITEM(USE_ETB),
+    ITEM(MAX_MOVES),
     { NULL, 0 }
 };
 #undef ITEM
+
+#define DEFAULT_MAX_MOVES   100
 
 struct mcts_ai
 {
@@ -19,7 +23,9 @@ struct mcts_ai
     struct mempool * think_pool;
     struct keyword_tracker * params;
     struct move_ctx * move_ctx;
+    struct node * * history;
     int use_etb;
+    int max_moves;
 };
 
 static inline struct mcts_ai * get_mcts_ai(struct ai * const me)
@@ -142,8 +148,37 @@ static void set_use_etb(
     me->use_etb = use_etb;
 }
 
+static void set_max_moves(
+    struct mcts_ai * restrict const me,
+    struct line_parser * restrict const lp)
+{
+    int max_moves;
+    int status = parser_read_last_int(lp, &max_moves);
+
+    if (status != 0) {
+        return ai_param_fail(lp, status, "AI SET MAX_MOVES");
+    }
+
+    if (max_moves <= 0) {
+        printf("Wrong MAX MOVES value %d. It should be positive nonzero integer.\n", max_moves);
+        return;
+    }
+
+    const size_t history_sz = max_moves * sizeof(struct node *);
+    struct node * * new_history = malloc(history_sz);
+    if (new_history == NULL) {
+        printf("Cannot malloc(%lu) for new history.\n", history_sz);
+        return;
+    }
+
+    free(me->history);
+    me->max_moves = max_moves;
+    me->history = new_history;
+}
+
 static const set_param_func set_param_handlers[] = {
     [PARAM_USE_ETB] = set_use_etb,
+    [PARAM_MAX_MOVES] = set_max_moves,
     [0] = NULL
 };
 
@@ -170,9 +205,13 @@ static void info(const struct mcts_ai * const me)
     if (me->use_etb != 0) {
         printf("-etb%d", me->use_etb);
     }
+    if (me->max_moves != DEFAULT_MAX_MOVES) {
+        printf("-mm%d", me->max_moves);
+    }
     printf("\n");
 
     printf("%*s %d\n", len, "use_etb", me->use_etb);
+    printf("%*s %d\n", len, "max_moves", me->max_moves);
     printf("%*s %s\n", len, "hash", AI_MCTS_HASH);
 }
 
@@ -214,6 +253,9 @@ static void mcts_ai_info(const struct ai * const ai)
 static void mcts_ai_free(struct ai * restrict ai)
 {
     struct mcts_ai * restrict const me = get_mcts_ai(ai);
+    if (me->history != NULL) {
+        free(me->history);
+    }
     free_mempool(me->pool);
 }
 
@@ -292,5 +334,15 @@ struct ai * create_mcts_ai(void)
     }
 
     me->use_etb = 0;
+
+    me->max_moves = DEFAULT_MAX_MOVES;
+    const size_t history_sz = me->max_moves * sizeof(struct node *);
+    me->history = malloc(history_sz);
+    if (me->history == NULL) {
+        printf("Error: malloc(%lu) is failed (history).\n", history_sz);
+        free_mempool(pool);
+        return NULL;
+    }
+
     return &me->base;
 }
