@@ -21,12 +21,12 @@ struct mcts_ai
     int use_etb;
 };
 
-struct mcts_ai * get_mcts_ai(struct ai * const me)
+static inline struct mcts_ai * get_mcts_ai(struct ai * const me)
 {
     return move_ptr(me, -offsetof(struct mcts_ai, base));
 }
 
-const struct mcts_ai * cget_mcts_ai(const struct ai * const me)
+static inline const struct mcts_ai * cget_mcts_ai(const struct ai * const me)
 {
     return move_cptr(me, -offsetof(struct mcts_ai, base));
 }
@@ -179,16 +179,16 @@ static void info(const struct mcts_ai * const me)
 
 /* API */
 
-void mcts_ai_set_position(struct ai * restrict me, const struct position * position)
+static void mcts_ai_set_position(struct ai * restrict me, const struct position * position)
 {
 }
 
-int  mcts_ai_do_move(struct ai * restrict me, struct move_ctx * restrict move_ctx)
+static int  mcts_ai_do_move(struct ai * restrict me, struct move_ctx * restrict move_ctx)
 {
     return do_move(get_mcts_ai(me), move_ctx);
 }
 
-const struct keyword_tracker * mcts_ai_get_supported_param(
+static const struct keyword_tracker * mcts_ai_get_supported_param(
     const struct ai * const ai)
 {
     const struct mcts_ai * const me = cget_mcts_ai(ai);
@@ -204,13 +204,13 @@ static void mcts_ai_set_param(
     set_param(me, param_id, lp);
 }
 
-void mcts_ai_info(const struct ai * const ai)
+static void mcts_ai_info(const struct ai * const ai)
 {
     const struct mcts_ai * const me = cget_mcts_ai(ai);
     info(me);
 }
 
-void mcts_ai_free(struct ai * restrict ai)
+static void mcts_ai_free(struct ai * restrict ai)
 {
     struct mcts_ai * restrict const me = get_mcts_ai(ai);
     free_mempool(me->pool);
