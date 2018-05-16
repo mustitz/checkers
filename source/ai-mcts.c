@@ -104,6 +104,72 @@ static struct node * alloc_node(
     return node;
 }
 
+static inline int rollout_move(
+    struct mcts_ai * restrict const me,
+    struct node * restrict node)
+{
+    return rand() % node->qanswers;
+}
+
+static inline int select_move(
+    struct mcts_ai * restrict const me,
+    struct node * restrict node)
+{
+    return 0;
+}
+
+static void simulate(
+    struct mcts_ai * restrict const me,
+    struct node * restrict node)
+{
+    struct node * * history = me->history;
+    int qhistory = 0;
+
+    int mcts_expanded = 0;
+
+    for (int i=0;; ++i) {
+
+        if (i >= me->max_moves) {
+            node->answers = NULL;
+            node->result_sum = 0;
+        }
+
+        /* Game over? */
+        if (node->answers == NULL) {
+            const int64_t result = node->result_sum;
+            for (int j=0; j<qhistory; ++j) {
+                history[j]->result_sum += result;
+                ++history[j]->qgames;
+            }
+            return;
+        }
+
+        history[qhistory++] = node;
+
+        int j=0;
+        for (; j<node->qanswers; ++j) {
+            if (node->nodes[j] == NULL) {
+                break;
+            }
+            if (!node->nodes[j]->in_mcts_tree) {
+                break;
+            }
+        }
+
+        const int answer_index = j == node->qanswers ? select_move(me, node) : rollout_move(me, node);
+
+        if (node->nodes[answer_index] == NULL) {
+            node->nodes[answer_index] = alloc_node(me, node->answers + answer_index);
+        }
+        node = node->nodes[answer_index];
+
+        if (node->in_mcts_tree == 0 && mcts_expanded == 0) {
+            node->in_mcts_tree = 1;
+            mcts_expanded = 1;
+        }
+    }
+}
+
 static int rollout(struct mcts_ai * restrict const me, const struct position * const position)
 {
     const int active = position->active;
@@ -439,5 +505,5 @@ struct ai * create_mcts_ai(void)
 
 void use_func() /* Dummy function for killing static unused warnings */
 {
-    printf("%p", &alloc_node);
+    printf("%p", &simulate);
 }
