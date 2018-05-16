@@ -1,6 +1,7 @@
 #include "mu-parser.h"
 
 #include <limits.h>
+#include <stdlib.h>
 #include <string.h>
 
 
@@ -194,6 +195,28 @@ int parser_read_last_int(
         return err;
     }
 
+    if (!parser_check_eol(me)) {
+        return PARSER_ERROR__NO_EOL;
+    }
+
+    *value = result;
+    return 0;
+}
+
+int parser_read_last_float(
+    struct line_parser * restrict const me,
+    float * restrict value)
+{
+    parser_skip_spaces(me);
+
+    const char * const float_str = (const char *)me->current;
+    char * endptr;
+    const float result = strtof(float_str, &endptr);
+    if (float_str == endptr) {
+       return PARSER_ERROR__NO_FLOAT;
+    }
+
+    me->current = (unsigned char *)endptr;
     if (!parser_check_eol(me)) {
         return PARSER_ERROR__NO_EOL;
     }
