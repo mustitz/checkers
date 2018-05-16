@@ -5,16 +5,19 @@
 
 #define PARAM_USE_ETB     1
 #define PARAM_MAX_MOVES   2
+#define PARAM_C           3
 
 #define ITEM(name) { #name, PARAM_##name }
 struct keyword_desc mcts_params[] = {
     ITEM(USE_ETB),
     ITEM(MAX_MOVES),
+    ITEM(C),
     { NULL, 0 }
 };
 #undef ITEM
 
 #define DEFAULT_MAX_MOVES   100
+#define DEFAULT_C           0.5
 
 struct mcts_ai
 {
@@ -26,6 +29,7 @@ struct mcts_ai
     struct node * * history;
     int use_etb;
     int max_moves;
+    float C;
 };
 
 static inline struct mcts_ai * get_mcts_ai(struct ai * const me)
@@ -176,9 +180,29 @@ static void set_max_moves(
     me->history = new_history;
 }
 
+static void set_C(
+    struct mcts_ai * restrict const me,
+    struct line_parser * restrict const lp)
+{
+    float C;
+    int status = parser_read_last_float(lp, &C);
+
+    if (status != 0) {
+        return ai_param_fail(lp, status, "AI SET C");
+    }
+
+    if (C <= 0.0) {
+        printf("Wrong C value %f.3. It should be positive nonzero float.\n", C);
+        return;
+    }
+
+    me->C = C;
+}
+
 static const set_param_func set_param_handlers[] = {
     [PARAM_USE_ETB] = set_use_etb,
     [PARAM_MAX_MOVES] = set_max_moves,
+    [PARAM_C] = set_C,
     [0] = NULL
 };
 
@@ -202,6 +226,7 @@ static void info(const struct mcts_ai * const me)
     static const int len = 10;
 
     printf("%*s mcts-%*.*s", len, "id", 8, 8, AI_MCTS_HASH);
+    printf("-C%.3f", me->C);
     if (me->use_etb != 0) {
         printf("-etb%d", me->use_etb);
     }
@@ -212,6 +237,7 @@ static void info(const struct mcts_ai * const me)
 
     printf("%*s %d\n", len, "use_etb", me->use_etb);
     printf("%*s %d\n", len, "max_moves", me->max_moves);
+    printf("%*s %.6f\n", len, "C", me->C);
     printf("%*s %s\n", len, "hash", AI_MCTS_HASH);
 }
 
@@ -343,6 +369,8 @@ struct ai * create_mcts_ai(void)
         free_mempool(pool);
         return NULL;
     }
+
+    me->C = DEFAULT_C;
 
     return &me->base;
 }
