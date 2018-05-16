@@ -42,6 +42,68 @@ static inline const struct mcts_ai * cget_mcts_ai(const struct ai * const me)
     return move_cptr(me, -offsetof(struct mcts_ai, base));
 }
 
+struct node
+{
+    const struct position * position;
+    struct position * answers;
+    struct node * * nodes;
+
+    int64_t result_sum;
+    int qgames;
+    int qanswers;
+    int in_mcts_tree;
+    int reserved;
+};
+
+static struct node * alloc_node(
+    const struct mcts_ai * const me,
+    const struct position * const position)
+{
+    mempool_align(me->think_pool, 32);
+    struct node * restrict node = mempool_alloc(me->think_pool, sizeof(struct node));
+    if (node == NULL) {
+        return NULL;
+    }
+
+    node->position = position;
+    node->qgames = 0;
+    node->in_mcts_tree = 0;
+
+    /* TODO: ETB */
+
+    struct move_ctx * restrict const ctx = me->move_ctx;
+    ctx->position = position;
+    gen_moves(ctx);
+
+    const int answer_count = node->qanswers = ctx->answer_count;
+    if (answer_count == 0) {
+        node->result_sum = position->active == BLACK ? +1 : -1;
+        node->answers = NULL;
+        node->nodes = NULL;
+        return node;
+    }
+
+    node->result_sum = 0;
+
+    const size_t answers_sz = answer_count * sizeof(struct position);
+    mempool_align(me->think_pool, 32);
+    node->answers = mempool_alloc(me->think_pool, answers_sz);
+    if (node->answers == NULL) {
+        return NULL;
+    }
+    memcpy(node->answers, ctx->answers, answers_sz);
+
+    const size_t nodes_sz = answer_count * sizeof(struct node *);
+    mempool_align(me->think_pool, 32);
+    node->nodes = mempool_alloc(me->think_pool, nodes_sz);
+    if (node->nodes == NULL) {
+        return NULL;
+    }
+    memset(node->nodes, 0, nodes_sz);
+
+    return node;
+}
+
 static int rollout(struct mcts_ai * restrict const me, const struct position * const position)
 {
     const int active = position->active;
@@ -373,4 +435,9 @@ struct ai * create_mcts_ai(void)
     me->C = DEFAULT_C;
 
     return &me->base;
+}
+
+void use_func() /* Dummy function for killing static unused warnings */
+{
+    printf("%p", &alloc_node);
 }
