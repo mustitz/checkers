@@ -1,5 +1,6 @@
 #include "checkers.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -111,11 +112,33 @@ static inline int rollout_move(
     return rand() % node->qanswers;
 }
 
+static inline float ubc_estimation(
+    const struct node * const node,
+    const float C,
+    const float total)
+{
+    const float sign = node->position->active == WHITE ? -1.0 : +1.0;
+    const float ev = (float)node->result_sum / (float)node->qgames;
+    return sign * ev + C * sqrt(log(total)/node->qgames);
+}
+
 static inline int select_move(
     struct mcts_ai * restrict const me,
     struct node * restrict node)
 {
-    return 0;
+    const int64_t total = node->qgames;
+    int best_i = 0;
+    float best_estimation = ubc_estimation(node->nodes[0], me->C, total);
+
+    for (int i=1; i<node->qanswers; ++i) {
+        const float estimation = ubc_estimation(node->nodes[i], me->C, total);
+        if (estimation > best_estimation) {
+            best_estimation = estimation;
+            best_i = i;
+        }
+    }
+
+    return best_i;
 }
 
 static void simulate(
