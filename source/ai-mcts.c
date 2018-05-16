@@ -196,76 +196,59 @@ static void simulate(
     }
 }
 
-static int rollout(struct mcts_ai * restrict const me, const struct position * const position)
-{
-    const int active = position->active;
-
-    struct move_ctx * restrict const ctx = me->move_ctx;
-    ctx->position = position;
-
-    for (;;) {
-        const bitboard_t * const bitboards = position->bitboards;
-        const bitboard_t all = bitboards[IDX_ALL_0] | bitboards[IDX_ALL_1];
-
-        if (pop_count(all) <= me->use_etb) {
-            const int8_t etb_estimation = etb_estimate(position);
-            if (etb_estimation != ETB_NA) {
-                if (etb_estimation == 0) {
-                    return 0;
-                }
-                const int is_win = (etb_estimation < 0) ^ (ctx->position->active == active);
-                return is_win ? +1 : -1;
-            }
-        }
-
-        gen_moves(ctx);
-
-        const int answer_count = ctx->answer_count;
-        if (answer_count == 0) {
-            const int is_win = ctx->position->active != active;
-            return is_win ? +1 : -1;
-        }
-
-        const int i = rand() % answer_count;
-        const struct position position_storage = ctx->answers[i];
-        ctx->position = &position_storage;
-    }
-}
-
 static int do_move(struct mcts_ai * restrict const me, struct move_ctx * restrict const move_ctx)
 {
-    const struct position * const answers = move_ctx->answers;
-    const int answer_count = move_ctx->answer_count;
+    int answer_count = move_ctx->answer_count;
+
+    if (answer_count == 0) {
+        printf("Internal error: call robust_ai_do_move with move_ctx->answer_count = 0.\n");
+        return -1;
+    }
+
     if (answer_count == 1) {
         return 0;
     }
 
-    int best[answer_count];
-    int best_result = -1;
-    int qbest = 0;
+    me->think_pool = create_mempool(128*1024*1024);
 
-    for (int i=0; i<answer_count; ++i) {
-        const int result = -rollout(me, answers + i);
-        if (result < best_result) {
-            continue;
-        }
-        if (result == best_result) {
-            best[qbest++] = i;;
-            continue;
-        }
+    const struct position * const position = move_ctx->position;
+    struct node * root = alloc_node(me, position);
+    root->in_mcts_tree = 1;
 
-        qbest = 1;
-        best[0] = i;
-        best_result = result;
+    for (int i=0; i<me->qsimulations; ++i) {
+        simulate(me, root);
     }
 
-    if (qbest == 0) {
-        printf("Internal error: qbest == 0.\n");
-        return -1;
+    int answers[root->qanswers];
+    int qanswers = 0;
+    int best = 0;
+
+    for (int i=0; i<root->qanswers; ++i) {
+
+        const struct node * const answer = root->nodes[i];
+        if (answer == NULL) {
+            continue;
+        }
+
+        const int qgames = answer->qgames;
+        if (best > qgames) {
+            continue;
+        }
+        if (best == qgames) {
+            answers[qanswers++] = i;
+            continue;
+        }
+        best = qgames;
+        answers[0] = i;
+        qanswers = 1;
     }
 
-    const int num = rand() % qbest;
-    return best[num];
+    struct mempool * restrict const tmp = me->think_pool;
+    me->think_pool = NULL;
+    free_mempool(tmp);
+
+    const int index = qanswers == 1 ? 0 : rand() % qanswers;
+    return answers[index];
 }
 
 static void ai_param_fail(
@@ -550,9 +533,4 @@ struct ai * create_mcts_ai(void)
     me->qsimulations = 1000;
 
     return &me->base;
-}
-
-void use_func() /* Dummy function for killing static unused warnings */
-{
-    printf("%p", &simulate);
 }
