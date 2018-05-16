@@ -16,6 +16,7 @@ struct mcts_ai
 {
     struct ai base;
     struct mempool * pool;
+    struct mempool * think_pool;
     struct keyword_tracker * params;
     struct move_ctx * move_ctx;
     int use_etb;
@@ -247,6 +248,7 @@ struct ai * create_mcts_ai(void)
     }
 
     me->pool = pool;
+    me->think_pool = NULL;
     me->base.set_position = mcts_ai_set_position;
     me->base.do_move = mcts_ai_do_move;
     me->base.get_supported_param = mcts_ai_get_supported_param;
