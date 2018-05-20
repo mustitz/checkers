@@ -5,6 +5,7 @@ import math
 import os
 import select
 import subprocess
+import sys
 import time
 
 parserArgs = {
@@ -46,7 +47,7 @@ maxMovesArg = {
 
 etbArg = {
     'help': 'ETB directory.',
-    'default': '.',
+    'default': None,
 }
 
 dirArg = {
@@ -126,9 +127,10 @@ def initProcess(cmd, player):
     popenArgs = {
         'stdin': subprocess.PIPE,
         'stdout': subprocess.PIPE,
+        'stderr': sys.stderr,
     }
 
-    p = subprocess.Popen(rusCheckers, **popenArgs)
+    p = subprocess.Popen(cmd, **popenArgs)
     if not p:
         print('Popen fails for player', settings)
         sys.exit(1)
@@ -157,6 +159,14 @@ class MoveStats:
         value = self.time / self.move_count
         return "%.6fs/mv" % value
 
+def aiSelect(p, game):
+    start = time.time()
+    move = execute(p, 'ai select')[0]
+    end = time.time()
+
+    game.append(move)
+    return move, end - start
+
 def runGame(p1, moveStats1, p2, moveStats2):
     global options
     moveCount = 1
@@ -178,12 +188,8 @@ def runGame(p1, moveStats1, p2, moveStats2):
             parts = move.split()
             move_indexes[parts[1]] = parts[0]
 
-        start = time.time()
-        move = execute(p1, 'ai select')[0]
-        end = time.time()
-
-        moveStats1.add_move(end - start)
-        game.append(move)
+        move, time = aiSelect(p1, game)
+        moveStats1.add_move(time)
 
         execute(p2, 'move select ' + move_indexes[move])
 
@@ -196,12 +202,8 @@ def runGame(p1, moveStats1, p2, moveStats2):
             parts = move.split()
             move_indexes[parts[1]] = parts[0]
 
-        start = time.time()
-        move = execute(p2, 'ai select')[0]
-        end = time.time()
-
-        moveStats2.add_move(end - start)
-        game.append(move)
+        move, time = aiSelect(p2, game)
+        moveStats2.add_move(time)
 
         execute(p1, 'move select ' + move_indexes[move])
 
@@ -257,6 +259,7 @@ games, win, loose, draw, ms1, ms2 = multiGames(p1, id1, p2, id2, options.count)
 if options.log:
     logFile = open(options.log, 'w')
     logFile.write("\n\n\n".join(games))
+    logFile.write("\n")
     logFile.close()
 
 isSmashing = False
@@ -264,7 +267,7 @@ if (loose == 0) and (draw == 0):
     isSmashing = True
     elo = '+INF'
 if (win == 0) and (draw == 0):
-    isSmahing = True
+    isSmashing = True
     elo = '-INF'
 if not isSmashing:
     result1 = (win + 0.5*draw) / (win + draw + loose)
