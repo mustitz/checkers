@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// #define TRACE_MCTS
+
 #define PARAM_USE_ETB       1
 #define PARAM_MAX_MOVES     2
 #define PARAM_C             3
@@ -44,6 +46,26 @@ static inline struct mcts_ai * get_mcts_ai(struct ai * const me)
 static inline const struct mcts_ai * cget_mcts_ai(const struct ai * const me)
 {
     return move_cptr(me, -offsetof(struct mcts_ai, base));
+}
+
+static inline void print_move(
+    FILE * const f,
+    const struct position * const prev,
+    const struct position * const next)
+{
+    const int active = prev->active;
+    const int index = IDX_ALL ^ active;
+    const bitboard_t old = prev->bitboards[index];
+    const bitboard_t new = next->bitboards[index];
+    const bitboard_t delta = old ^ new;
+    const square_t from = get_first_square(delta & old);
+    const square_t to = get_first_square(delta & new);
+
+    const bitboard_t enemy_old = prev->bitboards[index ^ 1];
+    const bitboard_t enemy_new = next->bitboards[index ^ 1];
+    const char * const inner_symbol = enemy_old == enemy_new ? "-" : ":";
+
+    fprintf(f, "%s%s%s", lower_square_str[from], inner_symbol, lower_square_str[to]);
 }
 
 struct node
@@ -129,12 +151,29 @@ static inline int select_move(
     struct mcts_ai * restrict const me,
     struct node * restrict node)
 {
+    #ifdef TRACE_MCTS
+        printf("Select move!\n");
+    #endif
+
     const int64_t total = node->qgames;
     int best_i = 0;
     float best_estimation = ubc_estimation(node->nodes[0], me->C, total);
 
+    #ifdef TRACE_MCTS
+        printf("  ");
+        print_move(stdout, node->position, node->nodes[0]->position);
+        printf(" %.6f\n", best_estimation);
+    #endif
+
     for (int i=1; i<node->qanswers; ++i) {
         const float estimation = ubc_estimation(node->nodes[i], me->C, total);
+
+        #ifdef TRACE_MCTS
+            printf("  ");
+            print_move(stdout, node->position, node->nodes[i]->position);
+            printf(" %.6f\n", estimation);
+        #endif
+
         if (estimation > best_estimation) {
             best_estimation = estimation;
             best_i = i;
@@ -163,6 +202,24 @@ static void simulate(
         /* Game over? */
         if (node->answers == NULL) {
             const int64_t result = node->result_sum;
+
+            #ifdef TRACE_MCTS
+                switch (result) {
+                    case -1:
+                        printf("Simulate over, 0-1.\n");
+                        break;
+                    case 0:
+                        printf("Simulate over, ½-½.\n");
+                        break;
+                    case +1:
+                        printf("Simulate over, 1-0.\n");
+                        break;
+                    default:
+                        printf("Unexpected result %ld.\n", result);
+                        break;
+                }
+            #endif
+
             for (int j=0; j<qhistory; ++j) {
                 history[j]->result_sum += result;
                 ++history[j]->qgames;
@@ -187,6 +244,14 @@ static void simulate(
         if (node->nodes[answer_index] == NULL) {
             node->nodes[answer_index] = alloc_node(me, node->answers + answer_index);
         }
+
+        #ifdef TRACE_MCTS
+            if (!mcts_expanded) {
+                print_move(stdout, node->position, node->nodes[answer_index]->position);
+                printf("\n");
+            }
+        #endif
+
         node = node->nodes[answer_index];
 
         if (node->in_mcts_tree == 0 && mcts_expanded == 0) {
@@ -217,6 +282,18 @@ static int do_move(struct mcts_ai * restrict const me, struct move_ctx * restric
 
     for (int i=0; i<me->qsimulations; ++i) {
         simulate(me, root);
+
+        #ifdef TRACE_MCTS
+            for (int j=0; j<answer_count; ++j) {
+                printf("Simulate ");
+                print_move(stdout, position, root->answers + j);
+                if (root->nodes[j] != NULL) {
+                    printf("  %ld from %d\n", root->nodes[j]->result_sum, root->nodes[j]->qgames);
+                } else {
+                    printf("-\n");
+                }
+            }
+        #endif
     }
 
     int answers[root->qanswers];
@@ -227,10 +304,19 @@ static int do_move(struct mcts_ai * restrict const me, struct move_ctx * restric
 
         const struct node * const answer = root->nodes[i];
         if (answer == NULL) {
+            #ifdef TRACE_MCTS
+                print_move(stdout, position, root->answers + i);
+                printf("%*s%d\n", 8, "", 0);
+            #endif
             continue;
         }
 
         const int qgames = answer->qgames;
+        #ifdef TRACE_MCTS
+            print_move(stdout, position, root->answers + i);
+            printf("%*s%d\n", 8, "", qgames);
+        #endif
+
         if (best > qgames) {
             continue;
         }
