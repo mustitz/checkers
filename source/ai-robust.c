@@ -141,14 +141,7 @@ static inline int lookup_etb(
     const int current_depth,
     int * restrict estimation)
 {
-    const bitboard_t * const bitboards = position->bitboards;
-    const bitboard_t all = bitboards[IDX_ALL_0] | bitboards[IDX_ALL_1];
-
-    if (pop_count(all) > me->use_etb) {
-        return 1;
-    }
-
-    int8_t etb_estimation = etb_estimate(position);
+    int8_t etb_estimation = etb_lookup(position, me->use_etb);
     if (etb_estimation == ETB_NA) {
         return 1;
     }

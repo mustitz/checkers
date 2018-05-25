@@ -407,4 +407,18 @@ void etb_load_all(void);
 int8_t etb_estimate(const struct position * const position);
 void etb_index(const struct position * const position);
 
+static inline int8_t etb_lookup(
+    const struct position * const position,
+    const int use_etb)
+{
+    const bitboard_t * const bitboards = position->bitboards;
+    const bitboard_t all = bitboards[IDX_ALL_0] | bitboards[IDX_ALL_1];
+
+    if (pop_count(all) > use_etb) {
+        return ETB_NA;
+    }
+
+    return etb_estimate(position);
+}
+
 #endif
