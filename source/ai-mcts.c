@@ -81,6 +81,26 @@ struct node
     int reserved;
 };
 
+static inline int result_from_estimation(
+    const int8_t estimation,
+    const int active)
+{
+    if (estimation == 0) return 0;
+    const int is_white = active == WHITE;
+    const int is_win = estimation > 0;
+    return (is_white ^ is_win) ? -1 : +1;
+}
+
+static inline struct node * terminal_node(
+    struct node * restrict const node,
+    int result)
+{
+    node->result_sum = result;
+    node->answers = NULL;
+    node->nodes = NULL;
+    return node;
+}
+
 static struct node * alloc_node(
     const struct mcts_ai * const me,
     const struct position * const position)
@@ -95,7 +115,12 @@ static struct node * alloc_node(
     node->qgames = 0;
     node->in_mcts_tree = 0;
 
-    /* TODO: ETB */
+    int8_t etb_estimation = etb_lookup(position, me->use_etb);
+    if (etb_estimation != ETB_NA) {
+        const int result = result_from_estimation(etb_estimation, position->active);
+        return terminal_node(node, result);
+    }
+
 
     struct move_ctx * restrict const ctx = me->move_ctx;
     ctx->position = position;
@@ -103,10 +128,8 @@ static struct node * alloc_node(
 
     const int answer_count = node->qanswers = ctx->answer_count;
     if (answer_count == 0) {
-        node->result_sum = position->active == BLACK ? +1 : -1;
-        node->answers = NULL;
-        node->nodes = NULL;
-        return node;
+        const int result = result_from_estimation(-1, position->active);
+        return terminal_node(node, result);
     }
 
     node->result_sum = 0;
