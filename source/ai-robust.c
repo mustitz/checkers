@@ -135,7 +135,7 @@ int game_mam_factor[4][4] = {
     { 88, 66, 66, 33 }
 };
 
-static inline int lookup_etb(
+static inline int estimate_from_etb(
     struct robust_ai * restrict const me,
     const struct position * const position,
     const int current_depth,
@@ -203,7 +203,7 @@ static int recursive_estimate(struct robust_ai * restrict me, struct move_ctx * 
     int current_depth = move_ctx->answers - me->buf;
 
     int etb_estimation;
-    if (lookup_etb(me, position, current_depth, &etb_estimation) == 0) {
+    if (estimate_from_etb(me, position, current_depth, &etb_estimation) == 0) {
         return etb_estimation;
     }
 
