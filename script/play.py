@@ -95,20 +95,26 @@ player2 = options.player2[0]
 
 
 
-def execute(p, cmd):
+def print_output(output, po):
+    if po:
+        for line in output:
+            print(line)
+    return output
+
+def execute(p, cmd, po=False):
     cmd = cmd + '\nping\n'
     p.stdin.write(cmd.encode('utf-8'))
     p.stdin.flush()
 
     result = []
     for b in iter(p.stdout.readline, b''):
-        line = b.decode('utf-8').strip()
-        if line == 'pong':
-            return result
+        line = b.decode('utf-8').rstrip()
+        if line.lstrip() == 'pong':
+            return print_output(result, po)
         result.append(line)
 
     result.append('???')
-    return result
+    return print_output(result, po)
 
 def close(p):
     p.stdin.write(b'exit\n')
@@ -137,10 +143,10 @@ def initProcess(cmd, player):
 
     global options
     if options.etb:
-        execute(p, 'etb load ' + options.etb)
+        execute(p, 'etb load ' + options.etb, True)
 
     setup = open(player).read()
-    execute(p, setup)
+    execute(p, setup, True)
 
     return p, getId(p)
 

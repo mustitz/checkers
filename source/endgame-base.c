@@ -231,8 +231,71 @@ static int etb_load(
     return status;
 }
 
+struct pretty_sz
+{
+    float value;
+    int decimals;
+    const char * unit;
+};
+
+static void set_pretty(
+    struct pretty_sz * restrict const fmt,
+    const float value,
+    const int decimals,
+    const char * const unit)
+{
+    fmt->value = value;
+    fmt->decimals = decimals;
+    fmt->unit = unit;
+}
+
+static int check_unit(
+    struct pretty_sz * restrict const fmt,
+    const float value,
+    const char * const unit)
+{
+    if (value < 1.0) {
+        set_pretty(fmt, value, 2, unit);
+        return 0;
+    }
+
+    if (value < 10.0) {
+        set_pretty(fmt, value, 1, unit);
+        return 0;
+    }
+
+    if (value < 100.0) {
+        set_pretty(fmt, value, 0, unit);
+        return 0;
+    }
+
+    return 1;
+}
+
+static void format_sz(const uint64_t sz, struct pretty_sz * restrict const fmt)
+{
+    if (sz < 1024) {
+        return set_pretty(fmt, sz, 0, "");
+    }
+
+    const char * units[] = { "k", "M", "G", "T", NULL };
+
+    float value = sz;
+    for (int i=0; units[i] != NULL; ++i) {
+        value /= 1024.0;
+        if (check_unit(fmt, value, units[i]) == 0) {
+            return;
+        }
+    }
+
+    set_pretty(fmt, value, 0, "T");
+}
+
 void etb_load_dir(DIR * const restrict dir)
 {
+    int file_count = 0;
+    uint64_t total = 0;
+
     for (;;) {
         struct dirent * restrict const file = readdir(dir);
         if (file == NULL) {
@@ -277,9 +340,14 @@ void etb_load_dir(DIR * const restrict dir)
         const struct position_code_info * const info = &position_code_infos[wcode][bcode];
         const int status = etb_load(info);
         if (status == 0) {
-            printf("Load file “%s”.\n", info->filename);
+            ++file_count;
+            total += info->total;
         }
     }
+
+    struct pretty_sz fmt;
+    format_sz(total, &fmt);
+    printf("%d file(s) has been loaded. The alocated memory size is %.*f %sb.\n", file_count, fmt.decimals, fmt.value, fmt.unit);
 }
 
 void etb_load_all(void)
