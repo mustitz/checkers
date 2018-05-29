@@ -1,5 +1,6 @@
 #include "checkers.h"
 
+#include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -284,9 +285,54 @@ static void simulate(
     }
 }
 
-static int do_move(struct mcts_ai * restrict const me, struct move_ctx * restrict const move_ctx)
+static int flat_estimation(
+    const struct position * const position)
 {
-    int answer_count = move_ctx->answer_count;
+    int8_t estimation = etb_estimate(position);
+    if (estimation == ETB_NA) return INT_MIN;
+
+    if (estimation < 0) return +10000 + estimation;
+    if (estimation > 0) return -10000 + estimation;
+    return 0;
+}
+
+static int etb_move(
+    const struct mcts_ai * const me,
+    const struct move_ctx * const move_ctx)
+{
+    const struct position * const position = move_ctx->position;
+    int8_t estimation = etb_lookup(position, me->use_etb);
+    if (estimation == ETB_NA) {
+        return -1;
+    }
+
+    const int answer_count = move_ctx->answer_count;
+    int indexes[answer_count];
+    int qindexes = 0;
+    int best_flat_estimation = INT_MIN;
+
+    for (int i=0; i<answer_count; ++i) {
+        const int new_flat_estimation = flat_estimation(move_ctx->answers + i);
+        if (new_flat_estimation < best_flat_estimation) {
+            continue;
+        }
+        if (new_flat_estimation == best_flat_estimation) {
+            indexes[qindexes++] = i;
+            continue;
+        }
+        best_flat_estimation = new_flat_estimation;
+        indexes[0] = i;
+        qindexes = 1;
+    }
+
+    return indexes[rand() % qindexes];
+}
+
+static int do_move(
+    struct mcts_ai * restrict const me,
+    struct move_ctx * restrict const move_ctx)
+{
+    const int answer_count = move_ctx->answer_count;
 
     if (answer_count == 0) {
         printf("Internal error: call robust_ai_do_move with move_ctx->answer_count = 0.\n");
@@ -295,6 +341,13 @@ static int do_move(struct mcts_ai * restrict const me, struct move_ctx * restric
 
     if (answer_count == 1) {
         return 0;
+    }
+
+    if (me->use_etb > 0) {
+        int result = etb_move(me, move_ctx);
+        if (result >= 0) {
+            return result;
+        }
     }
 
     me->think_pool = create_mempool(128*1024*1024);
