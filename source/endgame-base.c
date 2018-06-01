@@ -1124,6 +1124,23 @@ void etb_index(const struct position * const position)
     printf("%lu\n", index);
 }
 
+void etb_shm_create(void)
+{
+    printf("Not implemented.\n");
+}
+
+void etb_shm_destroy(void)
+{
+    printf("Not implemented.\n");
+}
+
+void etb_shm_use(void)
+{
+    printf("Not implemented.\n");
+}
+
+
+
 /*
  * Tests
  */

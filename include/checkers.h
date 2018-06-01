@@ -421,4 +421,8 @@ static inline int8_t etb_lookup(
     return etb_estimate(position);
 }
 
+void etb_shm_create(void);
+void etb_shm_destroy(void);
+void etb_shm_use(void);
+
 #endif

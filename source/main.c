@@ -18,6 +18,10 @@
 #define KW_LOAD            12
 #define KW_INDEX           13
 #define KW_PING            14
+#define KW_SHM             15
+#define KW_CREATE          16
+#define KW_DESTROY         17
+#define KW_USE             18
 
 #define ITEM(name) { #name, KW_##name }
 struct keyword_desc root_level_keywords[] = {
@@ -36,6 +40,10 @@ struct keyword_desc root_level_keywords[] = {
     ITEM(LOAD),
     ITEM(INDEX),
     ITEM(PING),
+    ITEM(SHM),
+    ITEM(CREATE),
+    ITEM(DESTROY),
+    ITEM(USE),
     { NULL, 0 }
 };
 #undef ITEM
@@ -586,6 +594,65 @@ static void process_etb_index(struct cmd_parser * restrict me)
     etb_index(me->game->position);
 }
 
+static void process_etb_shm_create(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    if (!parser_check_eol(lp)) {
+        return error(me, "ETB SHM CREATE: End of line expected, but something was found..");
+    }
+
+    etb_shm_create();
+}
+
+static void process_etb_shm_destroy(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    if (!parser_check_eol(lp)) {
+        return error(me, "ETB SHM DESTROY: End of line expected, but something was found..");
+    }
+
+    etb_shm_destroy();
+}
+
+static void process_etb_shm_use(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    if (!parser_check_eol(lp)) {
+        return error(me, "ETB SHM USE: End of line expected, but something was found..");
+    }
+
+    etb_shm_use();
+}
+
+static void process_etb_shm(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+    if (parser_check_eol(lp)) {
+        return error(me, "ETB SHM: One of the modifier “create”, “destroy”, or “use” expected.");
+    }
+
+    int keyword = read_keyword(me);
+
+    if (keyword == -1) {
+        return error(me, "Invalid lexem in ETB SHM command.");
+    }
+
+    if (keyword == 0) {
+        return error(me, "Invalid keyword in ETB SHM command.");
+    }
+
+    switch (keyword) {
+        case KW_CREATE:
+            return process_etb_shm_create(me);
+        case KW_DESTROY:
+            return process_etb_shm_destroy(me);
+        case KW_USE:
+            return process_etb_shm_use(me);
+    }
+
+    error(me, "Unexpected keyword in ETB command.");
+}
+
 static void process_etb(struct cmd_parser * restrict me)
 {
     struct line_parser * restrict lp = &me->line_parser;
@@ -612,6 +679,8 @@ static void process_etb(struct cmd_parser * restrict me)
             return process_etb_load(me);
         case KW_INDEX:
             return process_etb_index(me);
+        case KW_SHM:
+            return process_etb_shm(me);
     }
 
     error(me, "Unexpected keyword in ETB command.");
