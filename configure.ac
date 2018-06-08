@@ -26,6 +26,7 @@ MU_VALGRIND
 AC_PROG_CC_C99
 AM_SILENT_RULES([yes])
 AC_SEARCH_LIBS([sqrt, log], [m])
+AC_SEARCH_LIBS([shm_open, shm_unlink], [rt], [], [AC_MSG_ERROR([Cannot find the rt library, needed to build this package.])])
 
 
 

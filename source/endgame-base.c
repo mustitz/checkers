@@ -2,15 +2,23 @@
 
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #define MOVE_INC_SZ     (1024 * 256)
 
-#define HEADER_SZ       256
-#define VERSION_HI      1
-#define VERSION_LO      0
-#define SIGNATURE       "ETB Rus Checkers"
+#define HEADER_SZ          256
+#define VERSION_HI         1
+#define VERSION_LO         0
+#define FILE_SIGNATURE     "ETB Rus Checkers"
+#define SHM_SIGNATURE      "SHM ETB Rus Checkers"
+#define SHM_NAME           "etb-cd9009d"
+#define SHM_GRANULARITY    4096
+#define SHM_1G             (1024*1024*1024)
 
 char etb_dir[1024] = ".";
 void * position_code_data[SIDE_BITBOARD_CODE_COUNT][SIDE_BITBOARD_CODE_COUNT];
@@ -107,7 +115,7 @@ static void save_etb(
     struct etb_header * restrict const header = (void*)header_storage;
 
     memset(header->signature, '\0', 16);
-    strncpy(header->signature, SIGNATURE, 16);
+    strncpy(header->signature, FILE_SIGNATURE, 16);
 
     header->version_hi = VERSION_HI;
     header->version_lo = VERSION_LO;
@@ -148,7 +156,7 @@ static int etb_load_from_file(
         return -1;
     }
 
-    const int cmp = strncmp(header.signature, SIGNATURE, 16);
+    const int cmp = strncmp(header.signature, FILE_SIGNATURE, 16);
     if (cmp != 0) {
         fprintf(stderr, "Wrong signature\n");
         return -1;
@@ -1124,9 +1132,141 @@ void etb_index(const struct position * const position)
     printf("%lu\n", index);
 }
 
+struct shm_header
+{
+    char signature[32];
+    uint32_t version_hi;
+    uint32_t version_lo;
+    uint32_t header_sz;
+    uint32_t qcode_data;
+};
+
+struct code_data_info
+{
+    uint64_t offset;
+    uint64_t sz;
+};
+
 void etb_shm_create(void)
 {
-    printf("Not implemented.\n");
+    const size_t code_data_sz = sizeof(struct code_data_info) * SIDE_BITBOARD_CODE_COUNT * SIDE_BITBOARD_CODE_COUNT;
+
+    size_t sz = HEADER_SZ + code_data_sz;
+    const size_t mod = sz % SHM_GRANULARITY;
+    if (mod != 0) {
+        sz += SHM_GRANULARITY - mod;
+    }
+
+    for (int i=0; i<SIDE_BITBOARD_CODE_COUNT; ++i)
+    for (int j=0; j<SIDE_BITBOARD_CODE_COUNT; ++j) {
+        const struct position_code_info * const info = &position_code_infos[i][j];
+        if (info != info->base) {
+            continue;
+        }
+        if (position_code_data[i][j] == NULL) {
+            continue;
+        }
+
+        const size_t total = info->total;
+        const size_t mod = total % SHM_GRANULARITY;
+        const size_t delta = mod == 0 ? 0 : SHM_GRANULARITY - mod;
+        const size_t data_sz = total + delta;
+        sz += data_sz;
+    }
+
+    const size_t mod_1G = sz % SHM_1G;
+    if (mod_1G != 0) {
+        sz += SHM_1G - mod_1G;
+    }
+
+    const size_t shm_sz = sz;
+
+    const int fd = shm_open(SHM_NAME, O_RDWR | O_CREAT, 0644);
+    if (fd < 0) {
+        const int errnum = errno;
+        fprintf(stderr,
+            "Can not create SHM object, shm_open(“%s”, O_RDWR | O_CREAT, 0644) failed with error code %d (%s).\n",
+            SHM_NAME, errnum, strerror(errnum));
+        return;
+    }
+
+    const int status = ftruncate(fd, shm_sz);
+    if (status != 0) {
+        const int errnum = errno;
+        fprintf(stderr,
+            "Can not truncate SHM object, ftruncate(fd, %lu) failed with error code %d (%s).\n",
+            shm_sz, errnum, strerror(errnum));
+        close(fd);
+        shm_unlink(SHM_NAME);
+        return;
+    }
+
+    const int prot = PROT_READ | PROT_WRITE;
+    const int flags = MAP_SHARED;
+
+    void * const shm = mmap(NULL, shm_sz, prot, flags, fd, 0);
+    if (shm == MAP_FAILED) {
+        const int errnum = errno;
+        fprintf(stderr,
+            "Can not map SHM object to mempry, mmap(NULL, %lu, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0) failed with error code %d (%s).\n",
+            shm_sz, errnum, strerror(errnum));
+        close(fd);
+        shm_unlink(SHM_NAME);
+        return;
+    }
+
+    struct shm_header * const restrict header = move_ptr(shm, 0);
+    memset(header->signature, '\0', 32);
+    strncpy(header->signature, SHM_SIGNATURE, 32);
+
+    header->version_hi = VERSION_HI;
+    header->version_lo = VERSION_LO;
+    header->header_sz = HEADER_SZ;
+    header->qcode_data = SIDE_BITBOARD_CODE_COUNT;
+
+    struct code_data_info ( * restrict const code_data_info)[SIDE_BITBOARD_CODE_COUNT] = move_ptr(shm, HEADER_SZ);
+
+    sz = HEADER_SZ + code_data_sz;
+    if (mod != 0) {
+        sz += SHM_GRANULARITY - mod;
+    }
+
+    for (int i=0; i<SIDE_BITBOARD_CODE_COUNT; ++i)
+    for (int j=0; j<SIDE_BITBOARD_CODE_COUNT; ++j) {
+        const struct position_code_info * const info = &position_code_infos[i][j];
+        if (info != info->base) {
+            continue;
+        }
+
+        const void * const data = position_code_data[i][j];
+        if (data == NULL) {
+            continue;
+        }
+
+        const size_t total = info->total;
+        const size_t mod = total % SHM_GRANULARITY;
+        const size_t delta = mod == 0 ? 0 : SHM_GRANULARITY - mod;
+        const size_t data_sz = total + delta;
+
+        code_data_info[i][j].offset = sz;
+        code_data_info[i][j].sz = total;
+
+        void * restrict const ptr = move_ptr(shm, sz);
+        memcpy(ptr, data, total);
+        sz += data_sz;
+    }
+
+    if (mod_1G != 0) {
+        sz += SHM_1G - mod_1G;
+    }
+
+    munmap(shm, shm_sz);
+    close(fd);
+
+    if (sz != shm_sz) {
+        fprintf(stderr, "Assertion fails: sz != shm_sz, %lu != %lu.\n", sz, shm_sz);
+        shm_unlink(SHM_NAME);
+    }
 }
 
 void etb_shm_destroy(void)
