@@ -20,6 +20,25 @@
 #define SHM_GRANULARITY    4096
 #define SHM_1G             (1024*1024*1024)
 
+struct shm_info
+{
+    void * ptr;
+    size_t sz;
+    int fd;
+};
+
+#define NO_SHM ((struct shm_info){ .ptr = NULL, .sz = 0, .fd = -1 })
+struct shm_info shm_info = NO_SHM;
+
+static inline int is_shm(void)
+{
+    return 0
+        || shm_info.fd >= 0
+        || shm_info.ptr != NULL
+        || shm_info.sz > 0
+    ;
+}
+
 char etb_dir[1024] = ".";
 void * position_code_data[SIDE_BITBOARD_CODE_COUNT][SIDE_BITBOARD_CODE_COUNT];
 
@@ -46,9 +65,20 @@ static void set_position_code_data(
 
 void etb_free(void)
 {
-    for (int wcode = 0; wcode < SIDE_BITBOARD_CODE_COUNT; ++wcode)
-    for (int bcode = wcode; bcode < SIDE_BITBOARD_CODE_COUNT; ++bcode) {
-        set_position_code_data(wcode, bcode, NULL);
+    if (is_shm()) {
+        struct shm_info info = shm_info;
+        shm_info = NO_SHM;
+        if (info.ptr != NULL && info.sz) {
+            munmap(info.ptr, info.sz);
+        }
+        if (info.fd >= 0) {
+            close(info.fd);
+        }
+    } else {
+        for (int wcode = 0; wcode < SIDE_BITBOARD_CODE_COUNT; ++wcode)
+        for (int bcode = wcode; bcode < SIDE_BITBOARD_CODE_COUNT; ++bcode) {
+            set_position_code_data(wcode, bcode, NULL);
+        }
     }
 }
 
@@ -1271,12 +1301,146 @@ void etb_shm_create(void)
 
 void etb_shm_destroy(void)
 {
-    printf("Not implemented.\n");
+    if (is_shm()) {
+        etb_free();
+    }
+
+    shm_unlink(SHM_NAME);
 }
 
 void etb_shm_use(void)
 {
-    printf("Not implemented.\n");
+    const int fd = shm_open(SHM_NAME, O_RDONLY, 0444);
+    if (fd < 0) {
+        const int errnum = errno;
+        fprintf(stderr,
+            "Can not open SHM object, shm_open(“%s”, O_RDONLY, 0444) failed with error code %d (%s).\n",
+            SHM_NAME, errnum, strerror(errnum));
+        return;
+    }
+
+    struct stat shm_stat;
+    const int status = fstat(fd, &shm_stat);
+    if (status != 0) {
+        const int errnum = errno;
+        fprintf(stderr,
+            "Can not stat SHM object, fstat(fd, &shm_stat) failed with error code %d (%s).\n",
+            errnum, strerror(errnum));
+        close(fd);
+        return;
+    }
+
+    if (shm_stat.st_size < sizeof(struct shm_header)) {
+        fprintf(stderr,
+            "Stange st_size value %ld has been returned by fstat(fd, &shm_stat).\n",
+            shm_stat.st_size);
+        close(fd);
+        return;
+    }
+
+    const size_t shm_sz = (size_t)shm_stat.st_size;
+
+    void * const shm = mmap(NULL, shm_sz, PROT_READ, MAP_SHARED, fd, 0);
+    if (shm == MAP_FAILED) {
+        const int errnum = errno;
+        fprintf(stderr,
+            "Can not map SHM object to mempry, mmap(NULL, %lu, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0) failed with error code %d (%s).\n",
+            shm_sz, errnum, strerror(errnum));
+        close(fd);
+        shm_unlink(SHM_NAME);
+        return;
+    }
+
+    const struct shm_header * const header = move_ptr(shm, 0);
+
+    const int cmp = strncmp(header->signature, SHM_SIGNATURE, 32);
+    if (cmp != 0) {
+        fprintf(stderr, "Wrong signature in SHM object.\n");
+        close(fd);
+        shm_unlink(SHM_NAME);
+        return;
+    }
+
+    if (header->version_hi > VERSION_HI) {
+        fprintf(stderr,
+            "Unsupported version %u, current version id %d.\n",
+            header->version_hi, VERSION_HI);
+        close(fd);
+        shm_unlink(SHM_NAME);
+        return;
+    }
+
+    const uint32_t qcode_data = header->qcode_data;
+    if (qcode_data > SIDE_BITBOARD_CODE_COUNT) {
+        fprintf(stderr,
+            "Unsupported value for qcode_data in header (%u), maximum supported is %u.\n",
+            qcode_data, SIDE_BITBOARD_CODE_COUNT);
+        close(fd);
+        shm_unlink(SHM_NAME);
+        return;
+    }
+
+    const size_t code_data_sz = sizeof(struct code_data_info) * qcode_data * qcode_data;
+    const size_t header_with_code_data_sz = header->header_sz + code_data_sz;
+    if (shm_sz < header_with_code_data_sz) {
+        fprintf(stderr,
+            "SHM corrupted, total size = %lu, but header (%u) with code data (%lu) required %lu.\n",
+            shm_sz, header->header_sz, code_data_sz, header_with_code_data_sz);
+        close(fd);
+        shm_unlink(SHM_NAME);
+        return;
+    }
+
+    const struct code_data_info * code_data_ptr = move_ptr(shm, header->header_sz);
+    for (int i=0; i<qcode_data; ++i)
+    for (int j=0; j<qcode_data; ++j) {
+
+        const uint64_t offset = code_data_ptr->offset;
+        const uint64_t sz = code_data_ptr->sz;
+        ++code_data_ptr;
+
+        if (offset == 0 || sz == 0) {
+            continue;
+        }
+
+        const size_t data_end = offset + sz;
+        const size_t total = position_code_infos[i][j].total;
+        if (sz < total) {
+            fprintf(stderr,
+                "SHM corrupted, code data for %d/%d has too small size %lu (expected at least %lu).\n",
+                i, j, sz, total);
+            close(fd);
+            shm_unlink(SHM_NAME);
+            return;
+        }
+        if (shm_sz < data_end) {
+            fprintf(stderr,
+                "SHM corrupted, code data for %d/%d with offset %lu and size %lu (ends at %lu) is out of SHM file with size %lu.\n",
+                i, j, offset, sz, offset+sz, shm_sz);
+            close(fd);
+            shm_unlink(SHM_NAME);
+            return;
+        }
+    }
+
+    etb_free();
+
+    code_data_ptr = move_ptr(shm, header->header_sz);
+    for (int i=0; i<qcode_data; ++i)
+    for (int j=0; j<qcode_data; ++j) {
+
+        const uint64_t offset = code_data_ptr->offset;
+        const uint64_t sz = code_data_ptr->sz;
+        ++code_data_ptr;
+
+        if (offset == 0 || sz == 0) {
+            continue;
+        }
+
+        set_position_code_data(i, j, move_ptr(shm, offset));
+    }
+
+    shm_info = (struct shm_info){ .ptr = shm, .sz = shm_sz, .fd = fd };
 }
 
 
