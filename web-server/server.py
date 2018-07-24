@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 
+import json
+
 from email.utils import formatdate
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from os import stat
@@ -23,6 +25,13 @@ class Cfg:
         cls.base_path = abspath('.')
         if cls.base_path[-1] != '/':
             cls.base_path += '/'
+
+
+def safe_cast(val, to_type, default=None):
+    try:
+        return to_type(val)
+    except (ValueError, TypeError):
+        return default
 
 
 class Handler(ThreadingMixIn, BaseHTTPRequestHandler):
@@ -54,6 +63,40 @@ class Handler(ThreadingMixIn, BaseHTTPRequestHandler):
         self.end_headers()
         with open(path, 'rb') as content:
             copyfileobj(content, self.wfile)
+
+    def out_json(self, obj, qid = ''):
+        if qid:
+            obj['id'] = qid
+        json_text = json.dumps(obj) + '\n'
+        content = json_text.encode('utf-8')
+        self.send_response(200, 'OK')
+        self.send_header('Content-Type', 'appllication/json')
+        self.send_header('Content-Length', len(content))
+        self.end_headers()
+        self.wfile.write(content)
+
+    def do_POST(self):
+        self.protocol_version = 'HTTP/1.1'
+        if self.path != '/':
+            return error_404(self)
+
+        content_length_str = self.headers.get('Content-Length', '-1')
+        content_length = safe_cast(content_length_str, int, -1)
+        if content_length <= 0:
+            return self.out_json({'error': 'Wrong Content-Length.'})
+
+        content_type = self.headers.get('Content-Type', '')
+        if content_type != 'application/json':
+            return self.out_json({'error': 'Wrong Content-Type.'})
+
+        json_bytes = self.rfile.read(content_length)
+        json_text = json_bytes.decode('utf-8')
+        data = json.loads(json_text)
+        qid = data.get('id', '')
+        if type(qid) != str:
+            return self.out_json({'error': 'Wrong id type, string or empty expected.'})
+
+        return self.out_json({ 'error' : 'Not implemented' }, qid)
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
