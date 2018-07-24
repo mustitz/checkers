@@ -1,0 +1,3 @@
+[submodule "web-server/web-games"]
+	path = web-server/web-games
+	url = https://gitlab.com/mustitz/web-games.git

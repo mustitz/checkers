@@ -1,0 +1,27 @@
+<!doctype html><html>
+<head>
+    <title>Web checkers</title>
+</head><body>
+
+<script language="javascript" type="text/javascript" src="yoo-lib.js"></script>
+<script language="javascript" type="text/javascript" src="gui.js"></script>
+<script language="javascript" type="text/javascript" src="logic.js"></script>
+<div id="divDiagram"></div>
+<script language="javascript" type="text/javascript"><!--
+
+    yooRusCheckersConfig.pieceDir = './img/';
+    yooRusCheckersConfig.completeMove = './img/lime-border.png';
+    yooRusCheckersConfig.partialMove = './img/blue-border.png';
+
+    var diagram = {
+        'divId'    : 'divDiagram',
+        'viewOnly' : false,
+        'fen'      : 'W:Wa1,a3,b2,c1,c3,d2,e1,e3,f2,g1,g3,h2:Ba7,b6,b8,c7,d6,d8,e7,f6,f8,g7,h6,h8',
+        'rotated'  : false,
+        'tag'      : 'Main Diagram'
+    };
+    yooRusCheckers.init(diagram);
+//-->
+</script>
+
+</body></html>
