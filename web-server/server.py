@@ -4,6 +4,8 @@
 import hashlib
 import json
 import re
+import subprocess
+import sys
 
 from email.utils import formatdate
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -73,6 +75,51 @@ class RusCheckers:
     @classmethod
     def init(cls):
         cls.lock = Lock()
+
+        popenArgs = {
+            'stdin': subprocess.PIPE,
+            'stdout': subprocess.PIPE,
+            'stderr': sys.stderr,
+        }
+
+        cls.p = subprocess.Popen('rus-checkers', **popenArgs)
+        if not cls.p:
+            print('Popen fails for player', settings)
+            sys.exit(1)
+
+        cmd = 'etb shm use'
+        log = cls.execute(cmd)
+        print(cmd)
+        for line in log:
+            print(line)
+
+        cls.execute('set ai mcts')
+        cls.execute('ai set simul_count 250000')
+        cls.execute('ai set use_etb 6')
+
+        cls.id_lines = cls.execute('ai info')
+        cls.ai_id = ''
+        for line in cls.id_lines:
+            print(line)
+            parts = line.split()
+            if parts[0] == 'id':
+                cls.ai_id = parts[1]
+
+    @classmethod
+    def execute(cls, cmd):
+        cmd = cmd + '\nping\n'
+        cls.p.stdin.write(cmd.encode('utf-8'))
+        cls.p.stdin.flush()
+
+        result = []
+        for b in iter(cls.p.stdout.readline, b''):
+            line = b.decode('utf-8').rstrip()
+            if line.lstrip() == 'pong':
+                return result
+            result.append(line)
+
+        result.append('???')
+        return result
 
     @classmethod
     def check(cls, old_fen, move, new_fen):
