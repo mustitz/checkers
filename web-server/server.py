@@ -72,15 +72,23 @@ class SessionManager:
 class RusCheckers:
     @classmethod
     def init(cls):
-        pass
+        cls.lock = Lock()
 
     @classmethod
     def check(cls, old_fen, move, new_fen):
-        return True
+        cls.lock.acquire()
+        try:
+            return True
+        finally:
+            cls.lock.release()
 
     @classmethod
     def play(cls, fen):
-        return fen, 'pass', '*'
+        cls.lock.acquire()
+        try:
+            return fen, 'pass', '*'
+        finally:
+            cls.lock.release()
 
 
 class Handler(ThreadingMixIn, BaseHTTPRequestHandler):
