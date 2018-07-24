@@ -30,6 +30,8 @@ class Cfg:
         if cls.base_path[-1] != '/':
             cls.base_path += '/'
 
+        cls.start_fen = 'W:Wa1,a3,b2,c1,c3,d2,e1,e3,f2,g1,g3,h2:Ba7,b6,b8,c7,d6,d8,e7,f6,f8,g7,h6,h8';
+
 
 def safe_cast(val, to_type, default=None):
     try:
@@ -65,6 +67,20 @@ class SessionManager:
             cls.sessions[sid] = obj
         finally:
             cls.lock.release()
+
+
+class RusCheckers:
+    @classmethod
+    def init(cls):
+        pass
+
+    @classmethod
+    def check(cls, old_fen, move, new_fen):
+        return True
+
+    @classmethod
+    def play(cls, fen):
+        return fen, 'pass', '*'
 
 
 class Handler(ThreadingMixIn, BaseHTTPRequestHandler):
@@ -151,7 +167,63 @@ class Handler(ThreadingMixIn, BaseHTTPRequestHandler):
         if type(qid) != str:
             return self.out_json({'error': 'Wrong id type, string or empty expected.'})
 
-        return self.out_json({ 'error' : 'Not implemented' }, qid)
+        sid = data.get('sid')
+        if type(sid) != str:
+            return self.out_json({'error': 'Wrong sid type, string expected.'}, qid)
+
+        session = SessionManager.get(sid)
+        if type(session) != dict:
+            return self.out_json({'error': 'Sid not found, please refresh a page.'}, qid)
+
+        status = session.get('status')
+        old_fen = session.get('fen', Cfg.start_fen)
+        new = data.get('new')
+        if status == 'NEW' and type(new) != str:
+            return self.out_json({'error': 'Wrong new type, string expected.'}, qid)
+
+        if type(new) == str:
+            old_fen = Cfg.start_fen
+            if new == 'WHITE':
+                status = 'WAIT'
+            if new == 'BLACK':
+                status = 'SKIP_WAIT'
+                new_fen = old_fen
+            if status == 'NEW':
+                return self.out_json({'error': 'Wrong new type, WHITE or BLACK expected.'}, qid)
+
+        if status == 'WAIT':
+            move = data.get('move')
+            if type(move) != str:
+                return self.out_json({'error': 'Wrong move type, string expected.'}, qid)
+
+            new_fen = data.get('fen')
+            if type(move) != str:
+                return self.out_json({'error': 'Wrong fen type, string expected.'}, qid)
+
+            if not RusCheckers.check(old_fen, move, new_fen):
+                return self.out_json({'error': 'Wrong move & fen.'}, qid)
+
+        fen, move, result = RusCheckers.play(new_fen)
+        if move == 'error':
+            return self.out_json({'error': result}, qid)
+
+        if result == '*':
+            status = 'WAIT'
+        else:
+            status = 'NEW'
+
+        session['status'] = status
+        session['fen'] = fen
+
+        answer = {}
+        if qid:
+            answer['id'] = qid
+        answer['fen'] = fen
+        answer['move'] = move
+        answer['result'] = result
+
+        SessionManager.set(sid, session)
+        return self.out_json(answer, qid)
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -160,6 +232,7 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
 Cfg.init()
 SessionManager.init()
+RusCheckers.init()
 
 address = ('0.0.0.0', 8000)
 httpd = ThreadedHTTPServer(address, Handler)
