@@ -175,7 +175,33 @@ class RusCheckers:
     def play(cls, fen):
         cls.lock.acquire()
         try:
-            return fen, 'pass', '*'
+            output = cls.execute('fen ' + fen)
+            if len(output) != 0:
+                return '', 'error', 'Invalid FEN'
+
+            active = fen[0]
+            output = cls.execute('move list')
+            if len(output) == 0:
+                return fen, 'pass', '1-0' if active == 'B' else '0-1'
+
+            output = cls.execute('ai select')
+            if len(output) != 1:
+                return '', 'error', 'Wrong AI output'
+            move = output[0].strip()
+
+            output = cls.execute('fen')
+            if len(output) != 1:
+                return '', 'error', 'No FEN'
+            fen = output[0].strip()
+
+            output = cls.execute('move list')
+            if len(output) == 0:
+                result = '1-0' if active == 'W' else '0-1'
+            else:
+                result = '*'
+
+            return fen, move, result
+
         finally:
             cls.lock.release()
 
