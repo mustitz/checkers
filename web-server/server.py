@@ -125,7 +125,49 @@ class RusCheckers:
     def check(cls, old_fen, move, new_fen):
         cls.lock.acquire()
         try:
-            return True
+            output = cls.execute('fen ' + new_fen)
+            if len(output) != 0:
+                return False;
+
+            output = cls.execute('fen')
+            if len(output) != 1:
+                return False
+            new_fen = output[0].strip()
+
+            output = cls.execute('fen ' + old_fen)
+            if len(output) != 0:
+                return False
+
+            output = cls.execute('move list')
+            if len(output) == 0:
+                return False
+
+            moves = {}
+            for line in output:
+               parts = line.split()
+               n = int(parts[0])
+               possible_move = parts[1]
+               if possible_move == move:
+                   moves = { possible_move : n }
+                   break
+               moves[possible_move] = n
+
+            for move, num in moves.items():
+                output = cls.execute('move select ' + str(num))
+                if len(output) != 0:
+                    return False
+                output = cls.execute('fen')
+                if len(output) != 1:
+                    return False
+                fen = output[0].strip()
+                if fen == new_fen:
+                    return True
+                output = cls.execute('fen ' + old_fen)
+                if len(output) != 0:
+                    return False
+
+            return False
+
         finally:
             cls.lock.release()
 
