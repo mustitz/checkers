@@ -33,6 +33,8 @@
     };
     yooRusCheckers.init(diagram);
 
+    var gameStatus = 'NEW';
+
     function newGameWhite() {
         let diagram = {
             'divId'    : 'divDiagram',
@@ -62,9 +64,48 @@
         info.innerHTML = 'AI thinking...';
     }
 
-    function userMove() {
+    function userMove(div, move, fen) {
+        div.viewOnly = true;
+
         let info = yooLib.$('divInfo');
-        info.innerHTML = 'Not implemented!';
+        info.innerHTML = 'AI thinking...';
+
+        let request = {
+            'sid'  : sid,
+            'fen'  : fen,
+            'move' : move
+        };
+        if (gameStatus == 'NEW') {
+            request['new'] = 'WHITE';
+        }
+
+        request = JSON.stringify(request);
+
+        let http = new XMLHttpRequest();
+        http.timeout = 9000;
+        http.open('POST', '/');
+        http.setRequestHeader('Content-Type', 'application/json');
+
+        http.ontimeout = function () {
+            info.innerHTML = 'Timeout';
+        };
+
+        http.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                if (this.status == 200) {
+                    aiMove(this.responseText);
+                } else {
+                    info.innerHTML = 'Send error ' + http.status;
+                }
+            }
+        };
+
+        http.send(request);
+    }
+
+    function aiMove(json) {
+        console.log(json);
+        console.log('Not implemented');
     }
 //-->
 </script>
