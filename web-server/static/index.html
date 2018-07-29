@@ -48,6 +48,8 @@
 
         let info = yooLib.$('divInfo');
         info.innerHTML = 'Enter move';
+
+        gameStatus = 'NEW';
     }
 
     function newGameBlack() {
@@ -103,9 +105,48 @@
         http.send(request);
     }
 
+    function safeJsonParse(json) {
+        try {
+            let obj = JSON.parse(json);
+            return obj;
+        } catch(e) {
+            return;
+        }
+    }
+
     function aiMove(json) {
-        console.log(json);
-        console.log('Not implemented');
+        let info = yooLib.$('divInfo');
+        let div = yooLib.$('divDiagram');
+
+        json = safeJsonParse(json);
+        if (typeof(json) != 'object') {
+            info.innerHTML = 'Parse JSON error.';
+        }
+
+        if (typeof(json['error']) == 'string') {
+            info.innerHTML = 'Server error ' + json['error'];
+            return;
+        }
+
+        let diagram = {
+            'divId'    : 'divDiagram',
+            'viewOnly' : json.result != '*',
+            'fen'      : json.fen,
+            'rotated'  : div.rotated,
+            'tag'      : 'Main Diagram'
+        };
+        if (!diagram.viewOnly) {
+            diagram.onMove = userMove;
+        }
+        yooRusCheckers.init(diagram);
+
+        if (json.result == '*') {
+            gameStatus = 'IN_PROGRESS';
+            info.innerHTML = 'Last AI move is ' + json.move;
+        } else {
+            gameStatus = 'DONE';
+            info.innerHTML = 'Game over ' + json.result;
+        }
     }
 //-->
 </script>
