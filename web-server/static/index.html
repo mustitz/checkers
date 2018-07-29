@@ -62,15 +62,16 @@
         };
         yooRusCheckers.init(diagram);
 
-        let info = yooLib.$('divInfo');
-        info.innerHTML = 'AI thinking...';
+        gameStatus = 'IN_PROGRESS';
+
+        sendMove({
+            'sid' : sid,
+            'new' : 'BLACK'
+        });
     }
 
     function userMove(div, move, fen) {
         div.viewOnly = true;
-
-        let info = yooLib.$('divInfo');
-        info.innerHTML = 'AI thinking...';
 
         let request = {
             'sid'  : sid,
@@ -80,6 +81,13 @@
         if (gameStatus == 'NEW') {
             request['new'] = 'WHITE';
         }
+
+        sendMove(request);
+    }
+
+    function sendMove(request) {
+        let info = yooLib.$('divInfo');
+        info.innerHTML = 'AI thinking...';
 
         request = JSON.stringify(request);
 
