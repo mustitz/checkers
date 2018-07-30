@@ -317,6 +317,10 @@ static int parse_fen(struct cmd_parser * restrict me, struct position * restrict
 
         for (;;) {
             parser_skip_spaces(lp);
+            if (*lp->current == '\0') {
+                break;
+            }
+
             int is_king = 0;
             if (*lp->current == 'K' || *lp->current == 'k') {
                 is_king = 1;
@@ -362,16 +366,6 @@ static int parse_fen(struct cmd_parser * restrict me, struct position * restrict
             error(me, "Invalid delimeter, ',' or ':' or EOL expected.");
             return 6;
         }
-    }
-
-    if (position->bitboards[IDX_ALL_0] == 0) {
-        error(me, "No white checkers on the board.");
-        return 7;
-    }
-
-    if (position->bitboards[IDX_ALL_1] == 0) {
-        error(me, "No black checkers on the board.");
-        return 7;
     }
 
     return 0;
