@@ -85,11 +85,6 @@ p.add('player2', **player2Arg)
 
 options = p.parse_args()
 
-if options.dir:
-    rusCheckers = os.path.expandvars(options.dir + '/rus-checkers')
-else:
-    rusCheckers = 'rus-checkers'
-
 if len(options.player1) != 1:
     print('Wrong options.player1:', options.player1)
     sys.exit(1)
@@ -136,19 +131,41 @@ def getId(p):
             return parts[1]
     return ''
 
-def initProcess(cmd, player):
+def get_elf(lines):
+    if len(lines) == 0:
+        return ''
+    head = lines[0]
+    if len(head) == 0:
+        return ''
+    ch, tail = head[0], head[1:]
+    return tail if ch == '#' else '';
+
+def initProcess(player):
+    global options
+
+    setup = open(player).read()
+    lines = setup.split('\n')
+    elf = get_elf(lines)
+    if elf:
+        setup = setup[1:].strip()
+    else:
+        if options.dir:
+            elf = options.dir + '/rus-checkers'
+        else:
+            elf = 'rus-checkers'
+
     popenArgs = {
         'stdin': subprocess.PIPE,
         'stdout': subprocess.PIPE,
         'stderr': sys.stderr,
     }
 
-    p = subprocess.Popen(cmd, **popenArgs)
+    elf = os.path.expandvars(elf)
+    p = subprocess.Popen(elf, **popenArgs)
     if not p:
         print('Popen fails for player', settings)
         sys.exit(1)
 
-    global options
     if options.shm:
         execute(p, 'etb shm use')
     elif options.etb:
@@ -264,10 +281,10 @@ def multiGames(p1, id1, p2, id2, count):
 
     return games, win, loose, draw, moveStats1, moveStats2
 
-p1, id1 = initProcess(rusCheckers, player1)
+p1, id1 = initProcess(player1)
 print("Player1:", id1)
 
-p2, id2 = initProcess(rusCheckers, player2)
+p2, id2 = initProcess(player2)
 print("Player2:", id2)
 
 games, win, loose, draw, ms1, ms2 = multiGames(p1, id1, p2, id2, options.count)
