@@ -45,6 +45,12 @@ maxMovesArg = {
     'default': 100,
 }
 
+shmArg = {
+    'help' : 'Use SHM file for ETB.',
+    'action' : 'store_true',
+    'default' : False,
+}
+
 etbArg = {
     'help': 'ETB directory.',
     'default': None,
@@ -72,6 +78,7 @@ p.add('--no-swap', **noSwapArg)
 p.add('-l', '--log', **logArg)
 p.add('-m', '--max-moves', **maxMovesArg)
 p.add('-e', '--etb', **etbArg)
+p.add('--shm', **shmArg)
 p.add('-d', '--dir', **dirArg)
 p.add('player1', **player1Arg)
 p.add('player2', **player2Arg)
@@ -142,7 +149,9 @@ def initProcess(cmd, player):
         sys.exit(1)
 
     global options
-    if options.etb:
+    if options.shm:
+        execute(p, 'etb shm use')
+    elif options.etb:
         execute(p, 'etb load ' + options.etb, True)
 
     setup = open(player).read()
