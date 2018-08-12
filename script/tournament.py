@@ -100,6 +100,37 @@ def load_stats(players):
             player['stats'][k] = parse_stat(v)
 
 
+def split_by_rated(players):
+    is_unrated = lambda pair: pair[1].get('elo') is None
+    is_rated = lambda pair: not is_unrated(pair)
+    rated = [ element for element in players.items() if is_rated(element) ]
+    unrated = [ element for element in players.items() if is_unrated(element) ]
+    return rated, unrated
+
+
+def all_unrated(players, unrated):
+    print('Not implemented all unrated')
+    sys.exit(1)
+
+
+def all_rated(players, rated):
+    print('Not implemented: all rated')
+    sys.exit(1)
+
+
+def some_unrated(players, rated, unrated):
+    print('Not implemented: some unrated')
+    sys.exit(1)
+
+
 players = read_players()
 load_assume_rank(players)
 load_stats(players)
+rated, unrated = split_by_rated(players)
+
+if len(rated) == 0:
+    all_unrated(players, unrated)
+elif len(unrated) == 0:
+    all_rated(players, rated)
+else:
+    some_unrated(players, rated, unrated)
