@@ -5,6 +5,7 @@ from glob import glob
 import configargparse
 import os
 import sys
+import yaml
 
 
 parserArgs = {
@@ -66,5 +67,39 @@ def load_assume_rank(players):
         players[key]['assume_rank'] = get_assume_rank(key)
 
 
+ZERO_STATS = { '1': 0, '0': 0, '½': 0 }
+
+
+def parse_stat(raw):
+    raw = raw.strip()
+    result = ZERO_STATS.copy()
+    for ch in raw:
+        assert ch in '10½'
+        result[ch] += 1
+    result['raw'] = raw
+    return result
+
+
+def load_stats(players):
+    for name in players.keys():
+        player = players[name]
+        path = 'stats/{}.stat'.format(name)
+        try:
+            with open(path, 'r') as stream:
+                stats = (yaml.load(stream))
+        except FileNotFoundError:
+            player['qgames'] = 0
+            player['stats'] = {}
+            continue
+        player['qgames'] = stats.get('qgames', 0)
+        elo = stats.get('elo', None)
+        if not elo is None:
+            player['elo'] = elo
+        player['stats'] = {}
+        for k, v in stats.get('stats', {}).items():
+            player['stats'][k] = parse_stat(v)
+
+
 players = read_players()
 load_assume_rank(players)
+load_stats(players)
