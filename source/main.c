@@ -682,7 +682,9 @@ static void process_etb(struct cmd_parser * restrict me)
 
 int main()
 {
-    srand(time(0));
+    struct timespec spec;
+    clock_gettime(CLOCK_REALTIME, &spec);
+    srand(spec.tv_sec ^ spec.tv_nsec);
 
     char * line = 0;
     size_t len = 0;
