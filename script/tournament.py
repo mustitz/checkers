@@ -14,6 +14,12 @@ parserArgs = {
     'auto_env_var_prefix': 'CHECKERS_',
 }
 
+rateTryCountArg = {
+    'help': 'Maximum attempt count to rate unrated.',
+    'type': int,
+    'default': 10,
+}
+
 tournamentDirArg = {
     'help': 'Tournament directory.',
     'nargs': '?',
@@ -22,10 +28,12 @@ tournamentDirArg = {
 
 
 p = configargparse.ArgParser(**parserArgs)
+p.add('-t', '--rate-try-count', **rateTryCountArg)
 p.add('tournamentDir', **tournamentDirArg)
 
 
 options = p.parse_args()
+RATE_TRY_COUNT = options.rate_try_count
 tournamentDir = options.tournamentDir
 
 
@@ -100,6 +108,13 @@ def load_stats(players):
             player['stats'][k] = parse_stat(v)
 
 
+def sparring(p1, p2):
+    name1, data1 = p1[0], p1[1]
+    name2, data2 = p2[0], p2[1]
+    print('Not implemented: sparring', name1, 'VS', name2)
+    sys.exit(1)
+
+
 def split_by_rated(players):
     is_unrated = lambda pair: pair[1].get('elo') is None
     is_rated = lambda pair: not is_unrated(pair)
@@ -109,8 +124,18 @@ def split_by_rated(players):
 
 
 def all_unrated(players, unrated):
-    print('Not implemented all unrated')
-    sys.exit(1)
+    order = lambda pair: pair[1]['assume_rank']
+    unrated = sorted(unrated, key=order)
+    p1, unrated = unrated[0], unrated[1:]
+
+    opponents = [ element for element in unrated if element[1]['qgames'] <= RATE_TRY_COUNT ]
+    if len(opponents) == 0:
+        print('It looks like it is impossible to rated player', p1[0])
+        sys.exit(1)
+
+    p2 = opponents[0]
+    sparring(p1, p2)
+    sparring(p2, p1)
 
 
 def all_rated(players, rated):
