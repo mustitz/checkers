@@ -121,6 +121,16 @@ def load_stats(players):
             player['stats'][k] = parse_stat(v)
 
 
+def save_stats(players):
+    for name, player in players.items():
+        to_save = player.copy()
+        for k, v in player['stats'].items():
+            to_save['stats'][k] = v['raw']
+        path = 'stats/{}.stat'.format(name)
+        with open(path, 'w') as outfile:
+            yaml.dump(to_save, outfile, default_flow_style=False, allow_unicode=True)
+
+
 SPARRING_REGEX = re.compile('^ *[+]([0-9]+) *[-]([0-9]+) *[=]([0-9]+).*ELO')
 SPARRING_RESULTS = {
     '100': ( {'1':1,'0':0,'½':0}, '1-0' ),
@@ -279,3 +289,4 @@ else:
     some_unrated(players, rated, unrated)
 
 update_ratings(players)
+save_stats(players)
