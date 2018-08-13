@@ -182,17 +182,35 @@ def split_by_rated(players):
     return rated, unrated
 
 
+may_rated = lambda stat: stat['½'] != 0 or stat['1'] * stat['0'] != 0
+def update_ratings(players):
+    estimate_list = []
+    for k1, v1 in players.items():
+        all_stat = ZERO_STATS.copy()
+        for k2, v2 in v1['stats'].items():
+            add_stats(all_stat, v2)
+        if may_rated(all_stat):
+            estimate_list.append(k1)
+
+    if len(estimate_list) < 2:
+        return
+
+    print('Not implemented: calculate new ratings')
+
+
 def all_unrated(players, unrated):
     order = lambda pair: pair[1]['assume_rank']
     unrated = sorted(unrated, key=order)
     p1, unrated = unrated[0], unrated[1:]
+    name1, player1 = p1[0], p1[1]
 
     opponents = [ element for element in unrated if element[1]['qgames'] <= RATE_TRY_COUNT ]
     if len(opponents) == 0:
-        print('It looks like it is impossible to rated player', p1[0])
+        print('It looks like it is impossible to rate player', name1)
         sys.exit(1)
 
     p2 = opponents[0]
+    name2, player2 = p2[0], p2[1]
     sparring(p1, p2)
     sparring(p2, p1)
 
@@ -218,3 +236,5 @@ elif len(unrated) == 0:
     all_rated(players, rated)
 else:
     some_unrated(players, rated, unrated)
+
+update_ratings(players)
