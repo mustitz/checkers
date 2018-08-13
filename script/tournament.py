@@ -272,7 +272,21 @@ def all_rated(players, rated):
 
 
 def some_unrated(players, rated, unrated):
-    print('Not implemented: some unrated')
+    order = lambda pair: pair[1]['assume_rank']
+    unrated = sorted(unrated, key=order)
+    order = lambda pair: pair[1]['elo']
+    for p2 in unrated:
+        get_qgames = lambda player : len(player[1].get('stats', {}).get(p2[0], {}).get('raw', ''))
+        opponents = [ player for player in rated if get_qgames(player) < RATE_TRY_COUNT ]
+        if len(opponents) == 0:
+            continue
+        opponents = sorted(opponents, key=order)
+        p1 = opponents[-1]
+        sparring(p1, p2)
+        sparring(p2, p1)
+        return
+    unrated_names = map(lambda player : player[0], unrated)
+    print('It looks like it is impossible to rate unrated players:', list(unrated_names))
     sys.exit(1)
 
 
