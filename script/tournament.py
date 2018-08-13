@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from glob import glob
+from itertools import product
 from math import log10
 from subprocess import check_output
 
@@ -24,6 +25,12 @@ rateTryCountArg = {
     'default': 10,
 }
 
+roundsArg = {
+    'help': 'Maximum attempt count to rate unrated.',
+    'type': int,
+    'default': 24,
+}
+
 tournamentDirArg = {
     'help': 'Tournament directory.',
     'nargs': '?',
@@ -33,11 +40,13 @@ tournamentDirArg = {
 
 p = configargparse.ArgParser(**parserArgs)
 p.add('-t', '--rate-try-count', **rateTryCountArg)
+p.add('-r', '--rounds', **roundsArg)
 p.add('tournamentDir', **tournamentDirArg)
 
 
 options = p.parse_args()
 RATE_TRY_COUNT = options.rate_try_count
+ROUNDS = options.rounds
 tournamentDir = options.tournamentDir
 
 
@@ -267,8 +276,23 @@ def all_unrated(players, unrated):
 
 
 def all_rated(players, rated):
-    print('Not implemented: all rated')
-    sys.exit(1)
+    names = list(map(lambda pair: pair[0], rated))
+    pairs = [ pair for pair in product(names, names) if pair[0] != pair[1] ]
+    pairs = map(lambda pair: (pair[0], pair[1], {}), pairs)
+    get_games = lambda pair: sum_games(players[pair[0]]['stats'].get(pair[1], ZERO_STATS))
+    pair_sum = lambda pair: players[pair[0]]['qgames'] + players[pair[1]]['qgames']
+    pairs = map(lambda pair: (pair[0], pair[1], get_games(pair), pair_sum(pair)), pairs)
+    order = lambda pair: (pair[2], pair[3])
+    pairs = sorted(pairs, key=order)
+    pair = pairs[0]
+    if pair[2] >= ROUNDS:
+        print('Tournament complete')
+        sys.exit(1)
+
+    p1 = pair[0], players[pair[0]]
+    p2 = pair[1], players[pair[1]]
+    sparring(p1, p2)
+    sparring(p2, p1)
 
 
 def some_unrated(players, rated, unrated):
