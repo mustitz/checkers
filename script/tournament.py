@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
 from glob import glob
+from math import log10
 from subprocess import check_output
 
 import configargparse
+import numpy as np
 import os
 import re
 import sys
@@ -94,6 +96,9 @@ def add_stats(s1, s2, reverse=False):
     s1['1'] += s2['1'] if not reverse else s2['0']
     s1['0'] += s2['0'] if not reverse else s2['1']
     s1['½'] += s2['½']
+
+
+sum_games = lambda d: d['1'] + d['0'] + d['½']
 
 
 def load_stats(players):
@@ -195,7 +200,43 @@ def update_ratings(players):
     if len(estimate_list) < 2:
         return
 
-    print('Not implemented: calculate new ratings')
+    names = list(map(lambda name: name, estimate_list))
+
+    def fetch_stats(name):
+        player = players[name]
+        result = { 'name' : name, 'qgames' : 0, '1' : 0, '0' : 0, '½' : 0, 'stats' : {} }
+        for opponent_name in names:
+            stats = player['stats'].get(opponent_name, ZERO_STATS).copy()
+            add_stats(result, stats)
+            stats['qgames'] = sum_games(stats)
+            result['qgames'] += stats['qgames']
+            result['stats'][opponent_name] = stats
+        result['score'] = 1.0 * result['1'] + 0.5 * result['½']
+        result['nscore'] = result['score'] / result['qgames']
+        return result
+
+    estimate_list = list(map(fetch_stats, estimate_list))
+
+    n = len(estimate_list)
+    dim = n, n
+    A = np.zeros(dim)
+    B = np.zeros(n)
+
+    elo_diff = lambda e: -400 * log10(1/e-1)
+    for player in estimate_list:
+        i1 = names.index(player['name'])
+        for k, v in player['stats'].items():
+            i2 = names.index(k)
+            A[i1, i2] = -v['qgames'] / player['qgames']
+        A[i1, i1] = 1.0
+        B[i1] = elo_diff(player['nscore'])
+
+    X = np.linalg.lstsq(A, B, rcond=None)
+    R = X[0]
+    R = list(R-min(R))
+
+    for name, elo in zip(names, R):
+        players[name]['elo'] = int(round(elo))
 
 
 def all_unrated(players, unrated):
