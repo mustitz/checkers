@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
 from glob import glob
+from subprocess import check_output
 
 import configargparse
 import os
+import re
 import sys
 import yaml
 
@@ -88,6 +90,12 @@ def parse_stat(raw):
     return result
 
 
+def add_stats(s1, s2, reverse=False):
+    s1['1'] += s2['1'] if not reverse else s2['0']
+    s1['0'] += s2['0'] if not reverse else s2['1']
+    s1['½'] += s2['½']
+
+
 def load_stats(players):
     for name in players.keys():
         player = players[name]
@@ -108,11 +116,62 @@ def load_stats(players):
             player['stats'][k] = parse_stat(v)
 
 
+SPARRING_REGEX = re.compile('^ *[+]([0-9]+) *[-]([0-9]+) *[=]([0-9]+).*ELO')
+SPARRING_RESULTS = {
+    '100': ( {'1':1,'0':0,'½':0}, '1-0' ),
+    '010': ( {'1':0,'0':1,'½':0}, '0-1' ),
+    '001': ( {'1':0,'0':0,'½':1}, '½-½' ),
+}
+
+def run_sparring(cmd):
+    output = check_output(cmd, shell=True)
+    for line in output.decode('utf-8').split('\n'):
+        m = SPARRING_REGEX.match(line)
+        if m is None:
+            continue
+        s = m.group(1) + m.group(2) + m.group(3)
+        r = SPARRING_RESULTS.get(s)
+        if not r is None:
+            return r
+    raise AssertionError('No matched strings in output')
+
+
 def sparring(p1, p2):
-    name1, data1 = p1[0], p1[1]
-    name2, data2 = p2[0], p2[1]
-    print('Not implemented: sparring', name1, 'VS', name2)
-    sys.exit(1)
+    name1, player1 = p1[0], p1[1]
+    name2, player2 = p2[0], p2[1]
+
+    cmd = 'play.py {} {} --shm -c1 -l tmp.pdn'
+    cmd = cmd.format(player1['path'], player2['path'])
+    result, out = run_sparring(cmd)
+
+    stat1 = player1['stats'].get(name2, ZERO_STATS).copy()
+    stat2 = player2['stats'].get(name1, ZERO_STATS).copy()
+
+    add_stats(stat1, result)
+    add_stats(stat2, result, reverse=True)
+
+    stat1['raw'] = stat1.get('raw', '') + out[0]
+    stat2['raw'] = stat2.get('raw', '') + out[2]
+
+    player1['stats'][name2] = stat1
+    player2['stats'][name1] = stat2
+
+    player1['qgames'] += 1
+    player2['qgames'] += 1
+
+    ws = ' ' * (40 - len(name1) - len(name2))
+    stat = '+{} -{} ={}'.format(stat1['1'], stat1['0'], stat1['½'])
+    print(out, ' '*5, name1, 'VS', name2, ws, stat)
+
+    cmd1 = 'cat tmp.pdn >> games/{}.pdn'.format(name1)
+    cmd2 = 'cat tmp.pdn >> games/{}.pdn'.format(name2)
+    check_output(cmd1, shell=True)
+    check_output(cmd2, shell=True)
+
+    cmd1 = 'echo '' >> games/{}.pdn'.format(name1)
+    cmd2 = 'echo '' >> games/{}.pdn'.format(name2)
+    check_output(cmd1, shell=True)
+    check_output(cmd2, shell=True)
 
 
 def split_by_rated(players):
