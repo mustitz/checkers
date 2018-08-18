@@ -61,6 +61,11 @@ dirArg = {
     'default': '',
 }
 
+priorityArg = {
+    'help': 'Game engine\'s process priority.',
+    'type': int,
+}
+
 player1Arg = {
     'help': 'File with first player settings.',
     'nargs': 1,
@@ -80,6 +85,7 @@ p.add('-m', '--max-moves', **maxMovesArg)
 p.add('-e', '--etb', **etbArg)
 p.add('--shm', **shmArg)
 p.add('-d', '--dir', **dirArg)
+p.add('-p', '--priority', **priorityArg)
 p.add('player1', **player1Arg)
 p.add('player2', **player2Arg)
 
@@ -165,6 +171,9 @@ def initProcess(player):
     if not p:
         print('Popen fails for player', settings)
         sys.exit(1)
+
+    if not options.priority is None:
+        execute(p, 'set priority ' + str(options.priority))
 
     if options.shm:
         execute(p, 'etb shm use')

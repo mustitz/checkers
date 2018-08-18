@@ -1,7 +1,9 @@
 #include "checkers.h"
 
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/resource.h>
 #include <time.h>
 
 #define KW_QUIT             1
@@ -22,6 +24,7 @@
 #define KW_CREATE          16
 #define KW_DESTROY         17
 #define KW_USE             18
+#define KW_PRIORITY        19
 
 #define ITEM(name) { #name, KW_##name }
 struct keyword_desc root_level_keywords[] = {
@@ -44,6 +47,7 @@ struct keyword_desc root_level_keywords[] = {
     ITEM(CREATE),
     ITEM(DESTROY),
     ITEM(USE),
+    ITEM(PRIORITY),
     { NULL, 0 }
 };
 #undef ITEM
@@ -480,6 +484,7 @@ static void process_ai_info(struct cmd_parser * restrict me)
 
 static void process_set_ai(struct cmd_parser * restrict me);
 static void process_set_etb_dir(struct cmd_parser * restrict me);
+static void process_set_priority(struct cmd_parser * restrict me);
 
 static void process_set(struct cmd_parser * restrict me)
 {
@@ -498,6 +503,8 @@ static void process_set(struct cmd_parser * restrict me)
             return process_set_ai(me);
         case KW_ETB_DIR:
             return process_set_etb_dir(me);
+        case KW_PRIORITY:
+            return process_set_priority(me);
     }
 
     error(me, "Unexpected keyword in SET command.");
@@ -513,6 +520,22 @@ static void process_set_etb_dir(struct cmd_parser * restrict me)
 {
     struct str_with_len str = read_set_value(me, 1);
     etb_set_dir(str.s, str.len);
+}
+
+static void process_set_priority(struct cmd_parser * restrict me)
+{
+    struct line_parser * restrict lp = &me->line_parser;
+
+    int priority;
+    int status = parser_read_last_int(lp, &priority);
+    if (status != 0) {
+        return error(me, "Invalid value for SET PRIORITY command.");
+    }
+
+    status = setpriority(PRIO_PROCESS, 0, priority);
+    if (status != 0) {
+        fprintf(stderr, "Cannot set priority %d, errno = %d, %s.\n", priority, errno, strerror(errno));
+    }
 }
 
 static void process_etb_info(struct cmd_parser * restrict me)

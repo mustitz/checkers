@@ -31,6 +31,11 @@ roundsArg = {
     'default': 24,
 }
 
+priorityArg = {
+    'help': 'Game engine\'s process priority.',
+    'type': int,
+}
+
 tournamentDirArg = {
     'help': 'Tournament directory.',
     'nargs': '?',
@@ -41,12 +46,14 @@ tournamentDirArg = {
 p = configargparse.ArgParser(**parserArgs)
 p.add('-t', '--rate-try-count', **rateTryCountArg)
 p.add('-r', '--rounds', **roundsArg)
+p.add('-p', '--priority', **priorityArg)
 p.add('tournamentDir', **tournamentDirArg)
 
 
 options = p.parse_args()
 RATE_TRY_COUNT = options.rate_try_count
 ROUNDS = options.rounds
+PRIORITY = options.priority
 tournamentDir = options.tournamentDir
 
 
@@ -164,8 +171,9 @@ def sparring(p1, p2):
     name1, player1 = p1[0], p1[1]
     name2, player2 = p2[0], p2[1]
 
-    cmd = 'play.py {} {} --shm -c1 -l tmp.pdn'
-    cmd = cmd.format(player1['path'], player2['path'])
+    priority = '' if PRIORITY is None else ' -p' + str(PRIORITY)
+    cmd = 'play.py {} {}{} --shm -c1 -l tmp.pdn'
+    cmd = cmd.format(player1['path'], player2['path'], priority)
     result, out = run_sparring(cmd)
 
     stat1 = player1['stats'].get(name2, ZERO_STATS).copy()
