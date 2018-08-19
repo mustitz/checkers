@@ -80,7 +80,7 @@ struct node
     struct node * * nodes;
 
     int64_t result_sum;
-    int qgames;
+    int64_t qgames;
     int qanswers;
     int in_mcts_tree;
     int reserved;
@@ -439,7 +439,7 @@ static int do_move(
                 printf("Simulate ");
                 print_move(stdout, position, root->answers + j);
                 if (root->nodes[j] != NULL) {
-                    printf("  %ld from %d\n", root->nodes[j]->result_sum, root->nodes[j]->qgames);
+                    printf("  %ld from %ld\n", root->nodes[j]->result_sum, root->nodes[j]->qgames);
                 } else {
                     printf("-\n");
                 }
@@ -453,7 +453,7 @@ static int do_move(
 
     int answers[root->qanswers];
     int qanswers = 0;
-    int best = 0;
+    int64_t best = 0;
 
     for (int i=0; i<root->qanswers; ++i) {
 
@@ -462,7 +462,7 @@ static int do_move(
             continue;
         }
 
-        const int qgames = answer->qgames;
+        const int64_t qgames = answer->qgames;
         if (best > qgames) {
             continue;
         }
