@@ -144,7 +144,10 @@ def get_elf(lines):
     if len(head) == 0:
         return ''
     ch, tail = head[0], head[1:]
-    return tail if ch == '#' else '';
+    if ch == '#':
+        lines = lines[1:]
+        return tail
+    return ''
 
 def initProcess(player):
     global options
@@ -152,9 +155,7 @@ def initProcess(player):
     setup = open(player).read()
     lines = setup.split('\n')
     elf = get_elf(lines)
-    if elf:
-        setup = setup[1:].strip()
-    else:
+    if not elf:
         if options.dir:
             elf = options.dir + '/rus-checkers'
         else:
@@ -180,8 +181,7 @@ def initProcess(player):
     elif options.etb:
         execute(p, 'etb load ' + options.etb, True)
 
-    setup = open(player).read()
-    execute(p, setup, True)
+    execute(p, '\n'.join(lines), True)
 
     return p, getId(p)
 
