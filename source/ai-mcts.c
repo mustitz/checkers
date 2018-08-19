@@ -101,6 +101,7 @@ static inline struct node * terminal_node(
     int result)
 {
     node->result_sum = result;
+    node->qgames = 1;
     node->answers = NULL;
     node->nodes = NULL;
     return node;
@@ -230,6 +231,7 @@ static void simulate(
         /* Game over? */
         if (node->answers == NULL) {
             const int64_t result = node->result_sum;
+            ++node->qgames;
 
             #ifdef TRACE_MCTS
                 switch (result) {
