@@ -358,7 +358,7 @@ struct ai * get_game_ai(struct game * restrict const me)
     return me->ai;
 }
 
-void game_ai_select(struct game * restrict me)
+void game_ai_select(struct game * restrict me, const int is_hint)
 {
     struct ai * restrict const ai = get_game_ai(me);
     if (ai == NULL) {
@@ -388,7 +388,9 @@ void game_ai_select(struct game * restrict me)
     for (int i=0; i<me->verbose_move_count; ++i) {
         const struct verbose_move * verbose_move = me->verbose_moves + i;
         if (verbose_move->index == num) {
-            game_set_position(me, answers + num);
+            if (!is_hint) {
+                game_set_position(me, answers + num);
+            }
             print_verbose_move(verbose_move, 1);
             return;
         }

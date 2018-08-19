@@ -25,6 +25,7 @@
 #define KW_DESTROY         17
 #define KW_USE             18
 #define KW_PRIORITY        19
+#define KW_HINT            20
 
 #define ITEM(name) { #name, KW_##name }
 struct keyword_desc root_level_keywords[] = {
@@ -48,6 +49,7 @@ struct keyword_desc root_level_keywords[] = {
     ITEM(DESTROY),
     ITEM(USE),
     ITEM(PRIORITY),
+    ITEM(HINT),
     { NULL, 0 }
 };
 #undef ITEM
@@ -375,7 +377,7 @@ static int parse_fen(struct cmd_parser * restrict me, struct position * restrict
     return 0;
 }
 
-static void process_ai_select(struct cmd_parser * restrict me);
+static void process_ai_select(struct cmd_parser * restrict me, const int is_hint);
 static void process_ai_list(struct cmd_parser * restrict me);
 static void process_ai_set(struct cmd_parser * restrict me);
 static void process_ai_info(struct cmd_parser * restrict me);
@@ -394,7 +396,9 @@ static void process_ai(struct cmd_parser * restrict me)
 
     switch (keyword) {
         case KW_SELECT:
-            return process_ai_select(me);
+            return process_ai_select(me, 0);
+        case KW_HINT:
+            return process_ai_select(me, 1);
         case KW_LIST:
             return process_ai_list(me);
         case KW_SET:
@@ -406,11 +410,11 @@ static void process_ai(struct cmd_parser * restrict me)
     error(me, "Unexpected keyword in AI command.");
 }
 
-static void process_ai_select(struct cmd_parser * restrict me)
+static void process_ai_select(struct cmd_parser * restrict me, const int is_hint)
 {
     struct line_parser * restrict lp = &me->line_parser;
     if (parser_check_eol(lp)) {
-        game_ai_select(me->game);
+        game_ai_select(me->game, is_hint);
     } else {
         error(me, "End of line expected (AI SELECT command is parsed), but something was found.");
     }
