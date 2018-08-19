@@ -40,6 +40,7 @@ struct mcts_ai
     float C;
     int qsimulations;
     int explain;
+    int qmoves_in_explain;
 };
 
 static inline struct mcts_ai * get_mcts_ai(struct ai * const me)
@@ -331,6 +332,77 @@ static int etb_move(
     return indexes[rand() % qindexes];
 }
 
+struct node_stats {
+    int64_t result_sum;
+    int64_t qgames;
+    float ev;
+    int index;
+};
+
+int node_stats_cmp(
+    const struct node_stats * const a,
+    const struct node_stats * const b)
+{
+    if (a->qgames < b->qgames) return +1;
+    if (a->qgames > b->qgames) return -1;
+    if (a->result_sum < b->result_sum) return +1;
+    if (a->result_sum > b->result_sum) return -1;
+    return 0;
+}
+
+int cmp_node_stats(const void * const a, const void * const b)
+{
+    return node_stats_cmp(a, b);
+}
+
+static void explain_node(
+    const struct mcts_ai * const me,
+    const struct node * const node,
+    const int depth)
+{
+    if (depth >= me->qmoves_in_explain) {
+        return;
+    }
+
+    const int qanswers = node->qanswers;
+    struct node_stats node_stats[qanswers];
+
+    for (int i=0; i<qanswers; ++i) {
+        node_stats[i].index = i;
+
+        const struct node * const answer = node->nodes[i];
+        if (answer != NULL && answer->qgames > 0) {
+            node_stats[i].result_sum = answer->result_sum;
+            node_stats[i].qgames = answer->qgames;
+            node_stats[i].ev = (float)answer->result_sum / (float)answer->qgames;
+        } else {
+            node_stats[i].result_sum = 0;
+            node_stats[i].qgames = 0;
+            node_stats[i].ev = 0.0;
+        }
+    }
+
+    qsort(node_stats, qanswers, sizeof(struct node_stats), cmp_node_stats);
+
+    for (int i=0; i<qanswers; ++i) {
+        const struct node_stats * const stats = node_stats + i;
+        const int index = stats->index;
+        const struct node * const answer = node->nodes[index];
+        printf("Explain: %*s", depth*4, "");
+        print_move(stdout, node->position, node->answers + index);
+        printf("%*s", 8, "");
+        if (stats->qgames > 0) {
+            printf("%10ld   %7.4f\n", stats->qgames, stats->ev);
+        } else {
+            printf("%*s-\n", 9, "");
+        }
+
+        if (i == 0) {
+            explain_node(me, answer, depth+1);
+        }
+    }
+}
+
 static int do_move(
     struct mcts_ai * restrict const me,
     struct move_ctx * restrict const move_ctx)
@@ -375,6 +447,10 @@ static int do_move(
         #endif
     }
 
+    if (me->explain) {
+        explain_node(me, root, 0);
+    }
+
     int answers[root->qanswers];
     int qanswers = 0;
     int best = 0;
@@ -383,19 +459,10 @@ static int do_move(
 
         const struct node * const answer = root->nodes[i];
         if (answer == NULL) {
-            #ifdef TRACE_MCTS
-                print_move(stdout, position, root->answers + i);
-                printf("%*s%d\n", 8, "", 0);
-            #endif
             continue;
         }
 
         const int qgames = answer->qgames;
-        #ifdef TRACE_MCTS
-            print_move(stdout, position, root->answers + i);
-            printf("%*s%d\n", 8, "", qgames);
-        #endif
-
         if (best > qgames) {
             continue;
         }
@@ -716,6 +783,7 @@ struct ai * create_mcts_ai(void)
 
     me->C = DEFAULT_C;
     me->qsimulations = 1000;
+    me->qmoves_in_explain = 3;
 
     return &me->base;
 }
