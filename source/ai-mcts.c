@@ -1,6 +1,5 @@
 #include "checkers.h"
 
-#include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -289,27 +288,6 @@ static void simulate(
             mcts_expanded = 1;
         }
     }
-}
-
-static inline int etb_grade(
-    const struct position * const position,
-    const int big_offset)
-{
-    int8_t estimation = etb_estimate(position);
-    if (estimation == ETB_NA) return INT_MIN;
-
-    const bitboard_t bb_sim = position->bitboards[IDX_SIM_0] | position->bitboards[IDX_SIM_1];
-    const bitboard_t bb_all = position->bitboards[IDX_ALL_0] | position->bitboards[IDX_ALL_1];
-    const bitboard_t bb_mam = bb_all ^ bb_sim;
-
-    const int qfree = 32 - pop_count(bb_all);
-    const int qmam = pop_count(bb_mam);
-    const int grade = 32 * qfree + qmam;
-    const int offset = big_offset + 100 * grade;
-
-    if (estimation < 0) return +offset + estimation;
-    if (estimation > 0) return -offset + estimation;
-    return 0;
 }
 
 static int etb_move(
