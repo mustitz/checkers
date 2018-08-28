@@ -291,7 +291,7 @@ static void simulate(
     }
 }
 
-static int flat_estimation(
+static int etb_grade(
     const struct position * const position)
 {
     int8_t estimation = etb_estimate(position);
@@ -315,18 +315,18 @@ static int etb_move(
     const int answer_count = move_ctx->answer_count;
     int indexes[answer_count];
     int qindexes = 0;
-    int best_flat_estimation = INT_MIN;
+    int best_grade = INT_MIN;
 
     for (int i=0; i<answer_count; ++i) {
-        const int new_flat_estimation = flat_estimation(move_ctx->answers + i);
-        if (new_flat_estimation < best_flat_estimation) {
+        const int new_grade = etb_grade(move_ctx->answers + i);
+        if (new_grade < best_grade) {
             continue;
         }
-        if (new_flat_estimation == best_flat_estimation) {
+        if (new_grade == best_grade) {
             indexes[qindexes++] = i;
             continue;
         }
-        best_flat_estimation = new_flat_estimation;
+        best_grade = new_grade;
         indexes[0] = i;
         qindexes = 1;
     }
