@@ -9,7 +9,6 @@
 #define PARAM_USE_ETB       1
 #define PARAM_MAX_MOVES     2
 #define PARAM_C             3
-#define PARAM_SIMUL_COUNT   6
 #define PARAM_MNODES        4
 #define PARAM_EXPLAIN       5
 
@@ -18,7 +17,6 @@ struct keyword_desc mcts_params[] = {
     ITEM(USE_ETB),
     ITEM(MAX_MOVES),
     ITEM(C),
-    ITEM(SIMUL_COUNT),
     ITEM(MNODES),
     ITEM(EXPLAIN),
     { NULL, 0 }
@@ -39,7 +37,6 @@ struct mcts_ai
     int use_etb;
     int max_moves;
     float C;
-    int qsimulations;
     int mnodes;
     int explain;
     int qmoves_in_explain;
@@ -568,25 +565,6 @@ static void set_C(
     me->C = C;
 }
 
-static void set_simul_count(
-    struct mcts_ai * restrict const me,
-    struct line_parser * restrict const lp)
-{
-    int simul_count;
-    int status = parser_read_last_int(lp, &simul_count);
-
-    if (status != 0) {
-        return ai_param_fail(lp, status, "AI SET SIMUL_COUNT");
-    }
-
-    if (simul_count <= 0) {
-        printf("Wrong SIMUL COUNT value %d. It should be positive nonzero integer.\n", simul_count);
-        return;
-    }
-
-    me->qsimulations = simul_count;
-}
-
 static void set_mnodes(
     struct mcts_ai * restrict const me,
     struct line_parser * restrict const lp)
@@ -629,7 +607,6 @@ static const set_param_func set_param_handlers[] = {
     [PARAM_USE_ETB] = set_use_etb,
     [PARAM_MAX_MOVES] = set_max_moves,
     [PARAM_C] = set_C,
-    [PARAM_SIMUL_COUNT] = set_simul_count,
     [PARAM_MNODES] = set_mnodes,
     [PARAM_EXPLAIN] = set_explain,
     [0] = NULL
@@ -656,7 +633,6 @@ static void info(const struct mcts_ai * const me)
 
     printf("%*s mcts-%*.*s", len, "id", 8, 8, AI_MCTS_HASH);
     printf("-C%.3f", me->C);
-    printf("-s%d", me->qsimulations);
     printf("-n%dM", me->mnodes);
     if (me->use_etb != 0) {
         printf("-etb%d", me->use_etb);
@@ -669,7 +645,6 @@ static void info(const struct mcts_ai * const me)
     printf("%*s %d\n", len, "use_etb", me->use_etb);
     printf("%*s %d\n", len, "max_moves", me->max_moves);
     printf("%*s %.6f\n", len, "C", me->C);
-    printf("%*s %d\n", len, "simul_count", me->qsimulations);
     printf("%*s %dM\n", len, "nodes", me->mnodes);
     printf("%*s %s\n", len, "hash", AI_MCTS_HASH);
 }
@@ -804,7 +779,6 @@ struct ai * create_mcts_ai(void)
     }
 
     me->C = DEFAULT_C;
-    me->qsimulations = 1000;
     me->mnodes = 6;
     me->qmoves_in_explain = 3;
 
