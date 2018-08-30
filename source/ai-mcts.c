@@ -214,7 +214,7 @@ static inline int select_move(
     return best_i;
 }
 
-static void simulate(
+static uint64_t simulate(
     struct mcts_ai * restrict const me,
     struct node * restrict node)
 {
@@ -256,7 +256,7 @@ static void simulate(
                 history[j]->result_sum += result;
                 ++history[j]->qgames;
             }
-            return;
+            return qhistory;
         }
 
         history[qhistory++] = node;
@@ -424,8 +424,13 @@ static int do_move(
     struct node * root = alloc_node(me, position);
     root->in_mcts_tree = 1;
 
-    for (int i=0; i<me->qsimulations; ++i) {
-        simulate(me, root);
+    uint64_t qnodes = 0;
+    uint64_t qsimulations = 0;
+    const uint64_t qnodes_limit = (uint64_t)me->mnodes * 1024 * 1024;
+
+    while (qnodes < qnodes_limit) {
+        qnodes += simulate(me, root);
+        ++qsimulations;
 
         #ifdef TRACE_MCTS
             for (int j=0; j<answer_count; ++j) {
@@ -441,6 +446,8 @@ static int do_move(
     }
 
     if (me->explain) {
+        printf("Explain: qnodes = %lu\n", qnodes);
+        printf("Explain: qsimulations = %lu\n", qsimulations);
         explain_node(me, root, 0);
     }
 
