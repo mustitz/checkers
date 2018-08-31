@@ -141,23 +141,21 @@ static inline int estimate_from_etb(
     const int current_depth,
     int * restrict estimation)
 {
-    int8_t etb_estimation = etb_lookup(position, me->use_etb);
-    if (etb_estimation == ETB_NA) {
+    const int grade = etb_grade(position, 10000);
+    if (grade == INT_MIN) {
         return 1;
     }
 
-    if (etb_estimation == 0) {
+    if (grade == 0) {
         *estimation = 0;
-        return 0;
+    }
+    if (grade < 0) {
+        *estimation = MAX_ESTIMATION - 100*grade - current_depth;
+    }
+    if (grade > 0) {
+        *estimation = MIN_ESTIMATION - 100*grade + current_depth;
     }
 
-    const int etb_delta = 1000*etb_estimation;
-    const int depth_delta = 10*current_depth;
-    if (etb_estimation > 0) {
-        *estimation = MAX_ESTIMATION - etb_delta - depth_delta;
-    } else {
-        *estimation = MIN_ESTIMATION - etb_delta + depth_delta;
-    }
     return 0;
 }
 

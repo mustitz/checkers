@@ -46,20 +46,12 @@ static inline int estimate(
         return 0;
     }
 
-    int8_t etb_estimation = etb_estimate(position);
-    if (etb_estimation == ETB_NA) {
+    int grade = etb_grade(position, 10000);
+    if (grade == INT_MIN) {
         return 0;
     }
 
-    if (etb_estimation < 0) {
-        return 1000 + etb_estimation;
-    }
-
-    if (etb_estimation > 0) {
-        return -1000 + etb_estimation;
-    }
-
-    return 0;
+    return grade;
 }
 
 int random_ai_do_move(
@@ -82,7 +74,7 @@ int random_ai_do_move(
     int best_indexes[answer_count];
     int qbest = 0;
 
-    int best_estimation = -1000;
+    int best_estimation = INT_MIN;
     for (int i=0; i<answer_count; ++i) {
         const struct position * const answer = answers + i;
         const int estimation = estimate(me, answer);
