@@ -197,18 +197,36 @@ static inline int rollout_move_smooth(
     struct mcts_ai * restrict const me,
     struct node * restrict node)
 {
+
     /* TODO: Not implemented */
     return 0;
 }
+
+static inline float ubc_formula(
+    const int active,
+    const float C,
+    const float result_sum,
+    const float qgames,
+    const float total)
+{
+    const float sign = active == WHITE ? -1.0 : +1.0;
+    const float ev = result_sum / qgames;
+    const float investigation = sqrt(log(total) / qgames);
+    return sign * ev + C * investigation;
+}
+
 
 static inline float ubc_estimation(
     const struct node * const node,
     const float C,
     const float total)
 {
-    const float sign = node->position->active == WHITE ? -1.0 : +1.0;
-    const float ev = (float)node->result_sum / (float)node->qgames;
-    return sign * ev + C * sqrt(log(total)/node->qgames);
+    return ubc_formula(
+        node->position->active,
+        C,
+        node->result_sum,
+        node->qgames,
+        total);
 }
 
 static inline int select_move(
