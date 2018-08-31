@@ -1,5 +1,6 @@
 #include "checkers.h"
 
+#include <float.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -193,15 +194,6 @@ static inline int rollout_move(
     return variants[rand() % qvariants];
 }
 
-static inline int rollout_move_smooth(
-    struct mcts_ai * restrict const me,
-    struct node * restrict node)
-{
-
-    /* TODO: Not implemented */
-    return 0;
-}
-
 static inline float ubc_formula(
     const int active,
     const float C,
@@ -215,6 +207,62 @@ static inline float ubc_formula(
     return sign * ev + C * investigation;
 }
 
+static inline int rollout_move_smooth(
+    struct mcts_ai * restrict const me,
+    struct node * restrict node)
+{
+    if (node->qanswers == 1) {
+        return 0;
+    }
+
+    uint64_t total = 0;
+    uint64_t qgames[node->qanswers];
+    int64_t result_sum[node->qanswers];
+
+    for (int i=0; i<node->qanswers; ++i) {
+        const struct node * const child = node->nodes[i];
+        qgames[i] = 1;
+        result_sum[i] = 0;
+        if (child != NULL) {
+            qgames[i] += child->qgames;
+            result_sum[i] += child->result_sum;
+        }
+        total += qgames[i];
+    }
+
+    int best_answers[node->qanswers];
+    int qbest = 0;
+
+    float best_estimation = -FLT_MAX;
+
+    for (int i=0; i<node->qanswers; ++i) {
+        const float estimation = ubc_formula(
+            node->position->active ^ 1,
+            me->C,
+            result_sum[i],
+            qgames[i],
+            total);
+
+        if (estimation < best_estimation) {
+            continue;
+        }
+
+        if (estimation == best_estimation) {
+            best_answers[qbest++] = i;
+            continue;
+        }
+
+        qbest = 1;
+        best_answers[0] = i;
+        best_estimation = estimation;
+    }
+
+    if (qbest == 1) {
+        return best_answers[0];
+    }
+
+    return best_answers[rand() % qbest];
+}
 
 static inline float ubc_estimation(
     const struct node * const node,
