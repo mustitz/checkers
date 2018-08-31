@@ -162,7 +162,23 @@ static inline int rollout_move(
     struct mcts_ai * restrict const me,
     struct node * restrict node)
 {
-    return rand() % node->qanswers;
+    if (node->qanswers == 1) {
+        return 0;
+    }
+
+    int variants[node->qanswers];
+    int qvariants = 0;
+    for (int i=0; i<node->qanswers; ++i) {
+        if (node->nodes[i] == NULL) {
+            variants[qvariants++] = i;
+        }
+    }
+
+    if (qvariants == 0) {
+        return rand() % node->qanswers;
+    }
+
+    return variants[rand() % qvariants];
 }
 
 static inline float ubc_estimation(
