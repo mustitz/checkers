@@ -516,6 +516,14 @@ static void process_set(struct cmd_parser * restrict me)
 
 static void process_set_ai(struct cmd_parser * restrict me)
 {
+    struct line_parser * restrict lp = &me->line_parser;
+    parser_skip_spaces(lp);
+    const int ch = lp->current[0];
+    if (ch == '.') {
+        ++lp->current;
+        return process_ai_set(me);
+    }
+
     struct str_with_len str = read_set_value(me, 1);
     game_set_ai(me->game, str.s, str.len);
 }
