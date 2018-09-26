@@ -5,6 +5,7 @@
 *.o
 *.trs
 *.log
+gmon.out
 
 log
 .deps
