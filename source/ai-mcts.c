@@ -906,7 +906,7 @@ struct ai * create_mcts_ai(void)
     me->C = DEFAULT_C;
     me->mnodes = 6;
     me->qmoves_in_explain = 3;
-    me->rollout_move = rollout_move;
+    me->rollout_move = rollout_move_smooth;
 
     return &me->base;
 }
