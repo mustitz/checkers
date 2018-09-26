@@ -101,15 +101,22 @@ if len(options.player2) != 1:
     sys.exit(1)
 player2 = options.player2[0]
 
+processes = {}
 
 
-def print_output(output, po):
+def print_output(output, po, n):
     if po:
         for line in output:
-            print(line)
+            print(f'{n}>  {line}')
     return output
 
 def execute(p, cmd, po=False):
+    global processes
+    pinfo = processes[p.pid]
+    pinfo.setdefault('stdin', []).append(cmd)
+    n = pinfo['n']
+    elf = pinfo['elf']
+
     cmd = cmd + '\nping\n'
     p.stdin.write(cmd.encode('utf-8'))
     p.stdin.flush()
@@ -118,15 +125,20 @@ def execute(p, cmd, po=False):
     for b in iter(p.stdout.readline, b''):
         line = b.decode('utf-8').rstrip()
         if line.lstrip() == 'pong':
-            return print_output(result, po)
+            return print_output(result, po, n)
         result.append(line)
 
-    result.append('???')
-    return print_output(result, po)
+    print('Engine {n}:{elf} Command is not processed correctly.')
+    print('Command is:', '\\n'.join(cmd.split('\n')))
+    print('STDIN for process:')
+    for line in pinfo.get('stdin', []):
+        print(f'    {line}')
+    raise AssertionError(f'Engine Command “{cmd}” is not processed correctly.')
 
 def close(p):
     p.stdin.write(b'exit\n')
     p.stdin.close()
+    p.stdout.close()
     p.wait()
 
 def getId(p):
@@ -149,10 +161,12 @@ def get_elf(lines):
         return tail
     return ''
 
-def initProcess(player):
+def initProcess(player, n):
     global options
+    global processes
 
-    setup = open(player).read()
+    with open(player, 'r') as f:
+        setup = f.read()
     lines = setup.split('\n')
     elf = get_elf(lines)
     if not elf:
@@ -172,16 +186,19 @@ def initProcess(player):
     if not p:
         print('Popen fails for player', settings)
         sys.exit(1)
+    processes.setdefault(p.pid, {})['elf'] = elf
+    processes.setdefault(p.pid, {})['n'] = n
 
     if not options.priority is None:
-        execute(p, 'set priority ' + str(options.priority))
+        execute(p, 'set priority ' + str(options.priority), True)
 
     if options.shm:
-        execute(p, 'etb shm use')
+        execute(p, 'etb shm use', True)
     elif options.etb:
         execute(p, 'etb load ' + options.etb, True)
 
-    execute(p, '\n'.join(lines), True)
+    for cmd in lines:
+        execute(p, cmd, True)
 
     return p, getId(p)
 
@@ -290,18 +307,17 @@ def multiGames(p1, id1, p2, id2, count):
 
     return games, win, loose, draw, moveStats1, moveStats2
 
-p1, id1 = initProcess(player1)
-print("Player1:", id1)
+p1, id1 = initProcess(player1, 1)
+print("Player 1:", id1)
 
-p2, id2 = initProcess(player2)
-print("Player2:", id2)
+p2, id2 = initProcess(player2, 2)
+print("Player 2:", id2)
 
 games, win, loose, draw, ms1, ms2 = multiGames(p1, id1, p2, id2, options.count)
 if options.log:
-    logFile = open(options.log, 'w')
-    logFile.write("\n\n\n".join(games))
-    logFile.write("\n")
-    logFile.close()
+    with open(options.log, 'w') as logFile:
+        logFile.write("\n\n\n".join(games))
+        logFile.write("\n")
 
 isSmashing = False
 if (loose == 0) and (draw == 0):

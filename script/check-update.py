@@ -33,25 +33,26 @@ p.add('check_dir', **check_dir_arg)
 options = p.parse_args()
 os.chdir(options.check_dir)
 
-S_set = [ '100000', '250000', '625000' ]
-C_set = [ '1.1', '1.3', '1.5' ]
+M_set       = [ '1', '6', '21' ]
+multipliers = [ 10,   4,    1  ]
+C_set       = [ '1.1', '1.3', '1.5' ]
 
-for S in S_set:
+for M, multiplier in zip(M_set, multipliers):
     for C in C_set:
         script = [
             'set ai mcts',
-            'ai set use_etb 6',
-            'ai set C ' + C,
-            'ai set simul_count ' + S,
+            'set ai.use_etb 6',
+            'set ai.C ' + C,
+            'set ai.mnodes ' + M,
         '' ]
-        new_script = ['#./new/rus-checkers'] + script
+        new_script = ['#./new/rus-checkers'] + script + ['set ai.smooth 1', '']
         old_script = ['#./old/rus-checkers'] + script
         with open('new.player', 'w') as f:
             f.write('\n'.join(new_script))
         with open('old.player', 'w') as f:
             f.write('\n'.join(old_script))
 
-        name = 'c' + C + '-s' + S
+        name = 'c' + C + '-n' + M + 'M'
         fmt = 'play.py new.player old.player --shm -p19 -c{} -l {}.pdn >>log.txt 2>>errors.txt'
-        cmd = fmt.format(options.count, name)
+        cmd = fmt.format(multiplier * options.count, name)
         check_output(cmd, shell=True)

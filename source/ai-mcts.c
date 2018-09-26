@@ -1,5 +1,6 @@
 #include "checkers.h"
 
+#include <float.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +11,8 @@
 #define PARAM_MAX_MOVES     2
 #define PARAM_C             3
 #define PARAM_MNODES        4
-#define PARAM_EXPLAIN       5
+#define PARAM_SMOOTH        5
+#define PARAM_EXPLAIN       6
 
 #define ITEM(name) { #name, PARAM_##name }
 struct keyword_desc mcts_params[] = {
@@ -18,6 +20,7 @@ struct keyword_desc mcts_params[] = {
     ITEM(MAX_MOVES),
     ITEM(C),
     ITEM(MNODES),
+    ITEM(SMOOTH),
     ITEM(EXPLAIN),
     { NULL, 0 }
 };
@@ -25,6 +28,13 @@ struct keyword_desc mcts_params[] = {
 
 #define DEFAULT_MAX_MOVES   100
 #define DEFAULT_C           0.5
+
+struct mcts_ai;
+struct node;
+
+typedef int rollout_move_func(
+    struct mcts_ai * const restrict,
+    struct node * restrict);
 
 struct mcts_ai
 {
@@ -34,6 +44,9 @@ struct mcts_ai
     struct keyword_tracker * params;
     struct move_ctx * move_ctx;
     struct node * * history;
+
+    rollout_move_func * rollout_move;
+
     int use_etb;
     int max_moves;
     float C;
@@ -181,14 +194,87 @@ static inline int rollout_move(
     return variants[rand() % qvariants];
 }
 
+static inline float ubc_formula(
+    const int active,
+    const float C,
+    const float result_sum,
+    const float qgames,
+    const float total)
+{
+    const float sign = active == WHITE ? -1.0 : +1.0;
+    const float ev = result_sum / qgames;
+    const float investigation = sqrt(log(total) / qgames);
+    return sign * ev + C * investigation;
+}
+
+static inline int rollout_move_smooth(
+    struct mcts_ai * restrict const me,
+    struct node * restrict node)
+{
+    if (node->qanswers == 1) {
+        return 0;
+    }
+
+    uint64_t total = 0;
+    uint64_t qgames[node->qanswers];
+    int64_t result_sum[node->qanswers];
+
+    for (int i=0; i<node->qanswers; ++i) {
+        const struct node * const child = node->nodes[i];
+        qgames[i] = 1;
+        result_sum[i] = 0;
+        if (child != NULL) {
+            qgames[i] += child->qgames;
+            result_sum[i] += child->result_sum;
+        }
+        total += qgames[i];
+    }
+
+    int best_answers[node->qanswers];
+    int qbest = 0;
+
+    float best_estimation = -FLT_MAX;
+
+    for (int i=0; i<node->qanswers; ++i) {
+        const float estimation = ubc_formula(
+            node->position->active ^ 1,
+            me->C,
+            result_sum[i],
+            qgames[i],
+            total);
+
+        if (estimation < best_estimation) {
+            continue;
+        }
+
+        if (estimation == best_estimation) {
+            best_answers[qbest++] = i;
+            continue;
+        }
+
+        qbest = 1;
+        best_answers[0] = i;
+        best_estimation = estimation;
+    }
+
+    if (qbest == 1) {
+        return best_answers[0];
+    }
+
+    return best_answers[rand() % qbest];
+}
+
 static inline float ubc_estimation(
     const struct node * const node,
     const float C,
     const float total)
 {
-    const float sign = node->position->active == WHITE ? -1.0 : +1.0;
-    const float ev = (float)node->result_sum / (float)node->qgames;
-    return sign * ev + C * sqrt(log(total)/node->qgames);
+    return ubc_formula(
+        node->position->active,
+        C,
+        node->result_sum,
+        node->qgames,
+        total);
 }
 
 static inline int select_move(
@@ -284,7 +370,7 @@ static uint64_t simulate(
             }
         }
 
-        const int answer_index = j == node->qanswers ? select_move(me, node) : rollout_move(me, node);
+        const int answer_index = j == node->qanswers ? select_move(me, node) : me->rollout_move(me, node);
 
         if (node->nodes[answer_index] == NULL) {
             node->nodes[answer_index] = alloc_node(me, node->answers + answer_index);
@@ -600,6 +686,25 @@ static void set_mnodes(
     me->mnodes = mnodes;
 }
 
+static void set_smooth(
+    struct mcts_ai * restrict const me,
+    struct line_parser * restrict const lp)
+{
+    int smooth;
+    int status = parser_read_last_int(lp, &smooth);
+
+    if (status != 0) {
+        return ai_param_fail(lp, status, "AI SET SMOOTH");
+    }
+
+    if (smooth < 0 || smooth > 1) {
+        printf("Wrong SMOOTH value %d. It should be 0 or 1.\n", smooth);
+        return;
+    }
+
+    me->rollout_move = smooth ? rollout_move_smooth : rollout_move;
+}
+
 static void set_explain(
     struct mcts_ai * restrict const me,
     struct line_parser * restrict const lp)
@@ -624,6 +729,7 @@ static const set_param_func set_param_handlers[] = {
     [PARAM_MAX_MOVES] = set_max_moves,
     [PARAM_C] = set_C,
     [PARAM_MNODES] = set_mnodes,
+    [PARAM_SMOOTH] = set_smooth,
     [PARAM_EXPLAIN] = set_explain,
     [0] = NULL
 };
@@ -646,10 +752,12 @@ extern const char * const AI_MCTS_HASH;
 static void info(const struct mcts_ai * const me)
 {
     static const int len = 10;
+    const int is_smooth = me->rollout_move == rollout_move_smooth;
 
     printf("%*s mcts-%*.*s", len, "id", 8, 8, AI_MCTS_HASH);
     printf("-C%.3f", me->C);
     printf("-n%dM", me->mnodes);
+    printf("%s", is_smooth ? "-smooth" : "");
     if (me->use_etb != 0) {
         printf("-etb%d", me->use_etb);
     }
@@ -662,6 +770,7 @@ static void info(const struct mcts_ai * const me)
     printf("%*s %d\n", len, "max_moves", me->max_moves);
     printf("%*s %.6f\n", len, "C", me->C);
     printf("%*s %dM\n", len, "nodes", me->mnodes);
+    printf("%*s %d\n", len, "smooth", is_smooth);
     printf("%*s %s\n", len, "hash", AI_MCTS_HASH);
 }
 
@@ -797,6 +906,7 @@ struct ai * create_mcts_ai(void)
     me->C = DEFAULT_C;
     me->mnodes = 6;
     me->qmoves_in_explain = 3;
+    me->rollout_move = rollout_move;
 
     return &me->base;
 }
