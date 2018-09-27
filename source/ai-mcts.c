@@ -27,7 +27,7 @@ struct keyword_desc mcts_params[] = {
 #undef ITEM
 
 #define DEFAULT_MAX_MOVES   100
-#define DEFAULT_C           0.5
+#define DEFAULT_C           1.3
 
 struct mcts_ai;
 struct node;
@@ -659,20 +659,33 @@ static void set_C(
     struct mcts_ai * restrict const me,
     struct line_parser * restrict const lp)
 {
-    float C;
-    int status = parser_read_last_float(lp, &C);
+    float C1;
+    int status = parser_read_float(lp, &C1);
 
     if (status != 0) {
         return ai_param_fail(lp, status, "AI SET C");
     }
 
-    if (C <= 0.0) {
-        printf("Wrong C value %f.3. It should be positive nonzero float.\n", C);
+    float C2 = C1;
+    if (!parser_check_eol(lp)) {
+        int status = parser_read_float(lp, &C2);
+        if (status != 0) {
+            return ai_param_fail(lp, PARSER_ERROR__NO_EOL, "AI SET C1 C2");
+        }
+    }
+
+    if (C1 <= 0.0) {
+        printf("Wrong C1 value %f.3. It should be positive nonzero float.\n", C1);
         return;
     }
 
-    me->C1 = C;
-    me->C2 = C;
+    if (C2 <= 0.0) {
+        printf("Wrong C2 value %f.3. It should be positive nonzero float.\n", C2);
+        return;
+    }
+
+    me->C1 = C1;
+    me->C2 = C2;
 }
 
 static void set_mnodes(
