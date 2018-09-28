@@ -203,26 +203,29 @@ int parser_read_last_int(
     return 0;
 }
 
-int parser_read_last_float(
+int parser_read_float(
     struct line_parser * restrict const me,
     float * restrict value)
 {
+    const unsigned char * const orig = me->current;
     parser_skip_spaces(me);
 
     const char * const float_str = (const char *)me->current;
     char * endptr;
-    const float result = strtof(float_str, &endptr);
-    if (float_str == endptr) {
-       return PARSER_ERROR__NO_FLOAT;
+    *value = strtof(float_str, &endptr);
+    const int len = endptr - float_str;
+    if (len == 0) {
+        me->current = orig;
+        return PARSER_ERROR__NO_FLOAT;
+    }
+    me->current += len;
+
+    const unsigned char * const saved = me->current;
+    if (parser_check_eol(me)) {
+        return 0;
     }
 
-    me->current = (unsigned char *)endptr;
-    if (!parser_check_eol(me)) {
-        return PARSER_ERROR__NO_EOL;
-    }
-
-    *value = result;
-    return 0;
+    return me->current == saved ? PARSER_WARNING__FLOAT_PREFIX : 0;
 }
 
 int parser_read_keyword(struct line_parser * restrict me, const struct keyword_tracker * tracker)

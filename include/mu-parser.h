@@ -2,6 +2,7 @@
 #define MU__PARSER__H__
 
 #define PARSER_WARNING__OVERFLOW        +1
+#define PARSER_WARNING__FLOAT_PREFIX    +2
 #define PARSER_ERROR__END_OF_LINE       -1
 #define PARSER_ERROR__NO_DIGITS         -2
 #define PARSER_ERROR__NO_EOL            -3
@@ -62,7 +63,7 @@ int parser_check_eol(struct line_parser * restrict me);
 int parser_is_text(struct line_parser * restrict me, const char * text);
 int parser_try_int(struct line_parser * restrict me, int * value);
 int parser_read_last_int( struct line_parser * restrict const me, int * restrict value);
-int parser_read_last_float( struct line_parser * restrict const me, float * restrict value);
+int parser_read_float( struct line_parser * restrict const me, float * restrict value);
 int parser_read_keyword(struct line_parser * restrict me, const struct keyword_tracker * tracker);
 int parser_read_id(struct line_parser * restrict me);
 

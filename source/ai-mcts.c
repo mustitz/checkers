@@ -27,14 +27,15 @@ struct keyword_desc mcts_params[] = {
 #undef ITEM
 
 #define DEFAULT_MAX_MOVES   100
-#define DEFAULT_C           0.5
+#define DEFAULT_C           1.3
 
 struct mcts_ai;
 struct node;
 
 typedef int rollout_move_func(
     struct mcts_ai * const restrict,
-    struct node * restrict);
+    struct node * restrict,
+    const float C);
 
 struct mcts_ai
 {
@@ -49,7 +50,7 @@ struct mcts_ai
 
     int use_etb;
     int max_moves;
-    float C;
+    float C1, C2;
     int mnodes;
     int explain;
     int qmoves_in_explain;
@@ -173,7 +174,8 @@ static struct node * alloc_node(
 
 static inline int rollout_move(
     struct mcts_ai * restrict const me,
-    struct node * restrict node)
+    struct node * restrict node,
+    const float C)
 {
     if (node->qanswers == 1) {
         return 0;
@@ -209,7 +211,8 @@ static inline float ubc_formula(
 
 static inline int rollout_move_smooth(
     struct mcts_ai * restrict const me,
-    struct node * restrict node)
+    struct node * restrict node,
+    const float C)
 {
     if (node->qanswers == 1) {
         return 0;
@@ -238,7 +241,7 @@ static inline int rollout_move_smooth(
     for (int i=0; i<node->qanswers; ++i) {
         const float estimation = ubc_formula(
             node->position->active ^ 1,
-            me->C,
+            C,
             result_sum[i],
             qgames[i],
             total);
@@ -279,7 +282,8 @@ static inline float ubc_estimation(
 
 static inline int select_move(
     struct mcts_ai * restrict const me,
-    struct node * restrict node)
+    struct node * restrict node,
+    const float C)
 {
     #ifdef TRACE_MCTS
         printf("Select move!\n");
@@ -287,7 +291,7 @@ static inline int select_move(
 
     const int64_t total = node->qgames;
     int best_i = 0;
-    float best_estimation = ubc_estimation(node->nodes[0], me->C, total);
+    float best_estimation = ubc_estimation(node->nodes[0], C, total);
 
     #ifdef TRACE_MCTS
         printf("  ");
@@ -296,7 +300,7 @@ static inline int select_move(
     #endif
 
     for (int i=1; i<node->qanswers; ++i) {
-        const float estimation = ubc_estimation(node->nodes[i], me->C, total);
+        const float estimation = ubc_estimation(node->nodes[i], C, total);
 
         #ifdef TRACE_MCTS
             printf("  ");
@@ -315,7 +319,8 @@ static inline int select_move(
 
 static uint64_t simulate(
     struct mcts_ai * restrict const me,
-    struct node * restrict node)
+    struct node * restrict node,
+    const float C)
 {
     struct node * * history = me->history;
     int qhistory = 0;
@@ -370,7 +375,7 @@ static uint64_t simulate(
             }
         }
 
-        const int answer_index = j == node->qanswers ? select_move(me, node) : me->rollout_move(me, node);
+        const int answer_index = j == node->qanswers ? select_move(me, node, C) : me->rollout_move(me, node, C);
 
         if (node->nodes[answer_index] == NULL) {
             node->nodes[answer_index] = alloc_node(me, node->answers + answer_index);
@@ -528,7 +533,9 @@ static int do_move(
     const uint64_t qnodes_limit = (uint64_t)me->mnodes * 1024 * 1024;
 
     while (qnodes < qnodes_limit) {
-        qnodes += simulate(me, root);
+        const float k = (float)qnodes / (float)qnodes_limit;
+        const float C = me->C1 + k * (me->C2 - me->C1);
+        qnodes += simulate(me, root, C);
         ++qsimulations;
 
         #ifdef TRACE_MCTS
@@ -652,19 +659,33 @@ static void set_C(
     struct mcts_ai * restrict const me,
     struct line_parser * restrict const lp)
 {
-    float C;
-    int status = parser_read_last_float(lp, &C);
+    float C1;
+    int status = parser_read_float(lp, &C1);
 
     if (status != 0) {
         return ai_param_fail(lp, status, "AI SET C");
     }
 
-    if (C <= 0.0) {
-        printf("Wrong C value %f.3. It should be positive nonzero float.\n", C);
+    float C2 = C1;
+    if (!parser_check_eol(lp)) {
+        int status = parser_read_float(lp, &C2);
+        if (status != 0) {
+            return ai_param_fail(lp, PARSER_ERROR__NO_EOL, "AI SET C1 C2");
+        }
+    }
+
+    if (C1 <= 0.0) {
+        printf("Wrong C1 value %f.3. It should be positive nonzero float.\n", C1);
         return;
     }
 
-    me->C = C;
+    if (C2 <= 0.0) {
+        printf("Wrong C2 value %f.3. It should be positive nonzero float.\n", C2);
+        return;
+    }
+
+    me->C1 = C1;
+    me->C2 = C2;
 }
 
 static void set_mnodes(
@@ -755,7 +776,7 @@ static void info(const struct mcts_ai * const me)
     const int is_smooth = me->rollout_move == rollout_move_smooth;
 
     printf("%*s mcts-%*.*s", len, "id", 8, 8, AI_MCTS_HASH);
-    printf("-C%.3f", me->C);
+    printf("-C%.3f-%.3f", me->C1, me->C2);
     printf("-n%dM", me->mnodes);
     printf("%s", is_smooth ? "-smooth" : "");
     if (me->use_etb != 0) {
@@ -768,7 +789,8 @@ static void info(const struct mcts_ai * const me)
 
     printf("%*s %d\n", len, "use_etb", me->use_etb);
     printf("%*s %d\n", len, "max_moves", me->max_moves);
-    printf("%*s %.6f\n", len, "C", me->C);
+    printf("%*s %.6f\n", len, "C1", me->C1);
+    printf("%*s %.6f\n", len, "C2", me->C2);
     printf("%*s %dM\n", len, "nodes", me->mnodes);
     printf("%*s %d\n", len, "smooth", is_smooth);
     printf("%*s %s\n", len, "hash", AI_MCTS_HASH);
@@ -903,7 +925,8 @@ struct ai * create_mcts_ai(void)
         return NULL;
     }
 
-    me->C = DEFAULT_C;
+    me->C1 = DEFAULT_C;
+    me->C2 = DEFAULT_C;
     me->mnodes = 6;
     me->qmoves_in_explain = 3;
     me->rollout_move = rollout_move_smooth;
