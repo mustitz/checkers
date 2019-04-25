@@ -66,24 +66,47 @@ static inline const struct mcts_ai * cget_mcts_ai(const struct ai * const me)
     return move_cptr(me, -offsetof(struct mcts_ai, base));
 }
 
+static inline const char * square_str(const bitboard_t bitboard)
+{
+    const square_t sq = get_first_square(bitboard);
+    return lower_square_str[sq];
+}
+
 static inline void print_move(
     FILE * const f,
     const struct position * const prev,
     const struct position * const next)
 {
-    const int active = prev->active;
-    const int index = IDX_ALL ^ active;
-    const bitboard_t old = prev->bitboards[index];
-    const bitboard_t new = next->bitboards[index];
-    const bitboard_t delta = old ^ new;
-    const square_t from = get_first_square(delta & old);
-    const square_t to = get_first_square(delta & new);
+    struct move_ctx ctx;
+    struct taking sim_taking[BUF_SIZE__TAKING];
+    struct taking mam_taking[BUF_SIZE__TAKING];
+    struct move_inner sim_move_inner[BUF_SIZE__TAKING];
+    struct move_inner mam_move_inner[BUF_SIZE__TAKING];
+    struct position answers[BUF_SIZE__ANSWERS];
+    struct move moves[BUF_SIZE__ANSWERS];
 
-    const bitboard_t enemy_old = prev->bitboards[index ^ 1];
-    const bitboard_t enemy_new = next->bitboards[index ^ 1];
-    const char * const inner_symbol = enemy_old == enemy_new ? "-" : ":";
+    ctx.position = prev;
+    ctx.sim_taking = sim_taking;
+    ctx.mam_taking = mam_taking;
+    ctx.sim_move_inner = sim_move_inner;
+    ctx.mam_move_inner = mam_move_inner;
+    ctx.answers = answers;
+    ctx.moves = moves;
 
-    fprintf(f, "%s%s%s", lower_square_str[from], inner_symbol, lower_square_str[to]);
+    user_friendly_gen_moves(&ctx);
+
+    const int answer_count = ctx.answer_count;
+    for (int i=0; i<answer_count; ++i) {
+        if (memcmp(answers[i].bitboards, next->bitboards, sizeof(next->bitboards)) == 0) {
+            const struct move * const move = moves + i;
+            const char * const inner_symbol = move->killed == 0 ? "-" : ":";
+            fprintf(f, "%s%s", square_str(move->from), inner_symbol);
+            for (int i=0; i < move->inner.count; ++i) {
+                fprintf(f, "%s%s", square_str(move->inner.values[i]), inner_symbol);
+            }
+            fprintf(f, "%s", square_str(move->to));
+        }
+    }
 }
 
 struct node
