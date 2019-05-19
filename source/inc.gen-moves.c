@@ -442,6 +442,17 @@ void gen_sim_takes(struct move_ctx * restrict ctx)
     bitboard_t try_u7 = rotate_u7(rotate_u7(singles & possible_u7) & ctx->enemy) & empty;
     bitboard_t try_d7 = rotate_d7(rotate_d7(singles & possible_d7) & ctx->enemy) & empty;
 
+    #ifdef PORTUGAL
+        if (active == WHITE) {
+            try_d1 = 0;
+            try_d7 = 0;
+        }
+        if (active == BLACK) {
+            try_u1 = 0;
+            try_u7 = 0;
+        }
+    #endif
+
     while (try_u1) {
         bitboard_t current = try_u1 & (-try_u1);
         bitboard_t killed = current >> 1;
