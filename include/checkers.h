@@ -248,6 +248,7 @@ struct move_ctx
     struct move_inner * restrict sim_move_inner;
     struct move_inner * restrict mam_move_inner;
 
+    int taking_score;
     int answer_count;
     struct position * restrict answers;
     struct move * restrict moves;

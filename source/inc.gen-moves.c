@@ -103,8 +103,26 @@ void add_mam_takes(struct move_ctx * restrict ctx)
 
 
         if (saved_mam_taking_last == ctx->mam_taking_last) {
+
             bitboard_t tmp = mt->current;
-            do {
+
+            #ifdef PORTUGAL
+                const bitboard_t * bbs = ctx->position->bitboards;
+                bitboard_t sim = bbs[IDX_SIM_0] | bbs[IDX_SIM_1];
+                bitboard_t mam = (bbs[IDX_ALL_0] | bbs[IDX_ALL_1]) ^ sim;
+                int taked_sim = pop_count(sim & mt->killed);
+                int taked_mam = pop_count(mam & mt->killed);
+                int taking_score = 256 * (taked_sim + taked_mam) + taked_mam;
+                if (taking_score < ctx->taking_score) {
+                    tmp = 0;
+                }
+                if (taking_score > ctx->taking_score) {
+                    ctx->taking_score = taking_score;
+                    ctx->answer_count = 0;
+                }
+            #endif
+
+            while (tmp) {
                 struct position * restrict answer = ctx->answers + ctx->answer_count;
                 answer->active = ctx->position->active ^ 1;
 
@@ -133,7 +151,7 @@ void add_mam_takes(struct move_ctx * restrict ctx)
 
                 ++ctx->answer_count;
                 tmp &= tmp - 1;
-            } while (tmp);
+            }
         }
     }
 }
@@ -394,6 +412,23 @@ void add_sim_takes(struct move_ctx * restrict ctx, side_t active)
         }
 
         if (is_over) {
+
+            #ifdef PORTUGAL
+                const bitboard_t * bbs = ctx->position->bitboards;
+                bitboard_t sim = bbs[IDX_SIM_0] | bbs[IDX_SIM_1];
+                bitboard_t mam = (bbs[IDX_ALL_0] | bbs[IDX_ALL_1]) ^ sim;
+                int taked_sim = pop_count(sim & st->killed);
+                int taked_mam = pop_count(mam & st->killed);
+                int taking_score = 256 * (taked_sim + taked_mam) + taked_mam;
+                if (taking_score < ctx->taking_score) {
+                    continue;
+                }
+                if (taking_score > ctx->taking_score) {
+                    ctx->taking_score = taking_score;
+                    ctx->answer_count = 0;
+                }
+            #endif
+
             struct position * restrict answer = ctx->answers + ctx->answer_count;
             answer->active = ctx->position->active ^ 1;
 
@@ -810,6 +845,7 @@ void gen_mam_moves(struct move_ctx * restrict ctx)
 
 void gen_moves(struct move_ctx * restrict ctx)
 {
+    ctx->taking_score = 0;
     ctx->answer_count = 0;
     ctx->sim_taking_last = 0;
     ctx->mam_taking_last = 0;
